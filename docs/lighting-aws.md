@@ -75,18 +75,18 @@
 
 ### APP
 - 灯具列表  
-<img src="lighting-app-list.png" style="width:50%" />
+![APP灯具列表原型图](lighting-app-list.png)
 
 - 灯具控制  
-<img src="lighting-app-color.png" style="width:50%" />
+![APP灯具控制原型图](lighting-app-color.png)
 
 - 创建场景  
 如图，在针对家庭的APP中，为简化操作，可以不设置分组功能，但可以将当前各灯具的特定状态保存为场景：  
-<img src="lighting-app-create-scene.png" style="width:50%" />
+![APP创建场景原型图](lighting-app-create-scene.png)
 
 - 场景列表  
 如图，在APP的场景列表中，可以一键调用场景：  
-<img src="lighting-app-scene.png" style="width:50%" />
+![APP场景列表原型图](lighting-app-scene.png)
 
 ## 5. 黑客松开发目标
 在AWS黑客马拉松上，根据本计划开发出产品原型，实现将实际的照明设备连接到AWS，并开发出网页版、桌面端及APP对单个灯具和分组进行控制。
