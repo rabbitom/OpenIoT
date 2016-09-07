@@ -151,6 +151,16 @@ var commandStatus = {
 	fail: 1
 }
 
+var lightingPower = {
+	off: 0,
+	on: 1,
+	toggle: 2
+}
+
+var lightingEndpoint = 0xb;
+
+var nwkAddrAll = 0xffff;
+
 var commands =  {
 	system: {
 		networkSet: {layer: 1, id: 0x00, 
@@ -188,6 +198,7 @@ var commands =  {
 				buffer.fill(0);
 				param.macAddr.copy(buffer, 0, 0);
 				message.data =  buffer;
+				return true;
 			},
 			onResponse: function(message) {
 				if(message.data) {
@@ -220,11 +231,62 @@ var commands =  {
 		getScene: {layer: 4, id: 0x0E}
 	},
 	light: {
-		power: {layer: 5, id: 0x01},
+		power: {layer: 5, id: 0x01,
+			buildMessage: function(message, param) {
+				var light = gateway.getLight('id', param.id);
+				if(light)
+					message.nwkAddr = light.nwkAddr;
+				else if(param.id == 'all')
+					message.nwkAddr = nwkAddrAll;
+				else
+					return false;
+				message.endpoint = lightingEndpoint;
+				var buffer = new Buffer(1);
+				if(param.power) {
+					if(param.power == 'on')
+						buffer[0] = lightingPower.on;
+					else if(param.power == 'off')
+						buffer[0] = lightingPower.off;
+					else
+						buffer[0] = lightingPower.toggle;
+					message.data = buffer;
+					return true;
+				}
+				else
+					return false;
+			}
+		},
 		lum: {layer: 5, id: 0x02},
 		color: {layer: 5, id: 0x03},
 		colorTemperature: {layer: 5, id: 0x04},
-		getPower: {layer: 5, id: 0x05},
+		getPower: {layer: 5, id: 0x05,
+			buildMessage: function(message, param) {
+				var light = gateway.getLight('id', param.id);
+				if(light) {
+					message.nwkAddr = light.nwkAddr;
+					message.endpoint = lightingEndpoint;
+					var buffer = new Buffer(2);
+					buffer.fill(0);
+					message.data = buffer;
+					return true;
+				}
+				return false;
+			},
+			onResponse: function(message) {
+				var light = gateway.getLight('nwkAddr', message.nwkAddr);
+				if(light) {
+					if(message.data) {
+						if(message.data.length == 2) {
+							var power = message.data[2];
+							if(power == lightingPower.on)
+								light.power = 'on';
+							else if(power == lightingPower.off)
+								light.power = 'off';
+						}
+					}
+				}
+			}
+		},
 		getLum: {layer: 5, id: 0x06},
 		getHueSaturation: {layer: 5, id: 0x07},
 		getColorTemperature: {layer: 5, id: 0x08}
@@ -300,8 +362,13 @@ var gateway = {
 		}		
 		//---- for debug only ]
 		var message = new Message(command.layer, command.id);
-		if(command.buildMessage)
-			command.buildMessage(message, param);
+		if(command.buildMessage) {
+			if(!command.buildMessage(message, param)) {
+				console.log("build message failed, may be something wrong with param: ");
+				console.log(param);
+				return;
+			}
+		}
 		this.sendMessage(message);
 	},
 	onUserCommand: function(commandPath, paramStr) {
