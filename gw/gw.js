@@ -1,7 +1,27 @@
-var initCommand = false;
-if(process.argv.length > 2)
-	initCommand = process.argv[2];
-	
+var dataUtils = require("./data-utils.js");
+
+var initCommandPath = false;
+var initCommandParam = null;
+var argc = process.argv.length;
+if(argc > 2) {
+	initCommandPath = process.argv[2];
+	if(argc > 3)
+		initCommandParam = process.argv[3];
+}
+
+process.stdin.setEncoding('utf8');
+process.stdin.on('readable', () => {
+	var chunk = process.stdin.read();
+	if (chunk !== null) {
+		//process.stdout.write(`data: ${chunk}`);
+		var parts = chunk.replace(/\n/, '').split(' ', 2);
+		if(parts.length == 1)
+			gateway.onUserCommand(parts[0]);
+		else
+			gateway.onUserCommand(parts[0], parts[1]);
+	}
+});
+
 var portName = 'SLAB_USBtoUART';
 
 var SerialPort = require("serialport");
@@ -40,40 +60,47 @@ function onPortOpen(error) {
 	//myPort.write('hello, serial!');		
 	console.log('Serial port opened!');
 	myPort.on('data', onPortReceive);
-	if(initCommand) {
-		console.log("initCommand: " + initCommand);
-		var parts = initCommand.split(".");
-		if(parts.length == 2) {
-			console.log(parts[0] + ' ' + parts[1]);
-			var category = commands[parts[0]];
-			if(category) {
-				var command = category[parts[1]];
-				gateway.onCommand(command);
-			}
-		}
-	}
+	if(initCommandPath)
+		gateway.onUserCommand(initCommandPath, initCommandParam);
 	else
-		gateway.onCommand(commands.system.getVersion);
+		gateway.onInit();
 }
 
 function onPortReceive(data) {
-	console.log('receive:')
+	console.log('received:')
 	console.log(data);
 	if(((rxBufferLen == 0) && (data[0] == 0xFE)) || (rxBufferLen > 0)) {
 		data.copy(rxBuffer, 0, 0, data.length);
 		rxBufferLen += data.length;
 	}
-	if(rxBufferLen >= messageLengthMin) {
-		var rxMessage = {
-			length: rxBuffer[1],
-			layer: rxBuffer[2],
-			command: rxBuffer[3],
-			addrType: rxBuffer[4],
-			nwkAddr: rxBuffer.readUInt16LE(5),
-			endpoint: rxBuffer[7],
-			messageSQ: rxBuffer[8]
+	while(rxBufferLen >= messageLengthMin) {
+		// var rxMessage = {
+		// 	length: rxBuffer[1],
+		// 	layer: rxBuffer[2],
+		// 	command: rxBuffer[3],
+		// 	addrType: rxBuffer[4],
+		// 	nwkAddr: rxBuffer.readUInt16LE(5),
+		// 	endpoint: rxBuffer[7],
+		// 	messageSQ: rxBuffer[8]
+		// }
+		console.log(`length of rx buffer: ${rxBufferLen}`);
+		var rxMessageLen = rxBuffer[1];
+		if(rxMessageLen > rxBufferLen)
+			break;//message has not arrived completely
+		if(rxMessageLen < messageLengthMin) {
+			rxBufferLen = 0;
+			console.log(`malformed message - length(${rxMessageLen}) field too short`);
+			break;
 		}
-		var dataLength = rxMessage.length - messageLengthMin;
+		console.log("parse rx message: " + dataUtils.hexString(rxBuffer.slice(0, rxMessageLen)));
+		//console.log(rxBuffer.slice(0, rxMessageLen));
+		var rxMessage = new Message(rxBuffer[2], rxBuffer[3]);
+		rxMessage.length = rxMessageLen;
+		rxMessage.addrType = rxBuffer[4];
+		rxMessage.nwkAddr = rxBuffer.readUInt16LE(5);
+		rxMessage.endpoint = rxBuffer[7];
+		rxMessage.messageSQ = rxBuffer[8];
+		var dataLength = rxMessageLen - messageLengthMin;
 		if(dataLength > 0) {
 			rxMessage.data = new Buffer(dataLength);
 			rxBuffer.copy(rxMessage.data, 0, 9, 9 + dataLength);
@@ -85,45 +112,92 @@ function onPortReceive(data) {
 			for(var commandKey in category) {
 				var iCommand = category[commandKey];
 				if(iCommand.layer != rxMessage.layer)
-					break;
+					break;//not this category
 				if(iCommand.id == commandId) {
-					command = iCommand;	
-					break;
+					console.log("got response for command: " + commandKey);
+					command = iCommand;
+					break;//found command
 				}
 			}
 			if(command)
-				break;
+				break;//found command
 		}
 		if(command) {
 			if((rxMessage.command & 0x40 == 0x40) && command.onAck)
 				command.onAck(rxMessage);
 			if((rxMessage.command & 0x80 == 0x80) && command.onResponse)
 				command.onResponse(rxMessage);
+			if(rxBufferLen == rxMessageLen) {
+				rxBufferLen = 0;
+				break;//no more data to process
+			}
 		}
+		else
+			console.log(`no command found of ${rxMessage.layer}.${rxMessage.command}`);
+		rxBuffer.copy(rxBuffer, 0, rxMessageLen);
+		rxBufferLen -= rxMessageLen;
 	}
+}
+
+var addrTypes = {
+	multicast: 1,
+	nwkUnicast: 2,
+	macUnicast: 3,
+	broadcast: 0x0f,
+}
+
+var commandStatus = {
+	ok: 0,
+	fail: 1
 }
 
 var commands =  {
 	system: {
-		networkSet: {layer: 1, id: 0x00, onResponse: function(message) {
-			console("network is set");
-			if(message.data)
-				gateway.updateVersion(message.data);
-		}},
-		getVersion: {layer: 1, id: 0x01, onAck: function(message) {
-			if(message.data)
-				gateway.updateVersion(message.data);
-		}},
+		networkSet: {layer: 1, id: 0x00, 
+			onResponse: function(message) {
+				console("network is set");
+				if(message.data)
+					gateway.updateVersion(message.data);
+			}
+		},
+		getVersion: {layer: 1, id: 0x01, 
+			onAck: function(message) {
+				if(message.data)
+					gateway.updateVersion(message.data);
+			}
+		},
 		reset: {layer: 1, id: 0x02},
 		restore: {layer: 1, id: 0x03},
 		networkParam: {layer: 1, id: 0x04}
 	},
 	network: {
 		switchNetwork: {layer: 2, id: 0x01},
-		getAddress: {layer: 2, id: 0x02},
+		getAddress: {layer: 2, id: 0x02, 
+			//will not send this message, only receive when device is on
+			onResponse: function(message) {
+				var macAddr = message.data.slice(2,10);
+				gateway.updateLightNwkAddr(macAddr, message.nwkAddr);
+			}
+		},
 		getEndpoint: {layer: 2, id: 0x03},
 		getType: {layer: 2, id: 0x04},
-		getNwkAddrByMac: {layer: 2, id: 0x05},
+		getNwkAddrByMac: {layer: 2, id: 0x05, 
+			buildMessage: function(message, param) {
+				message.addrType = addrTypes.macUnicast;
+				var buffer = new Buffer(10);
+				buffer.fill(0);
+				param.macAddr.copy(buffer, 0, 0);
+				message.data =  buffer;
+			},
+			onResponse: function(message) {
+				if(message.data) {
+					if((message.data.length == 9) && (message.data[0] == commandStatus.ok)) {
+						var macAddr = message.data.slice(1);
+						gateway.updateLightNwkAddr(macAddr, message.nwkAddr);
+					}
+				}
+			}
+		},
 		getMacAddrByNwk: {layer: 2, id: 0x06},
 		bind: {layer: 2, id: 0x07},
 		unbind: {layer: 2, id: 0x08},
@@ -157,24 +231,109 @@ var commands =  {
 	}
 }
 
+var Light = function(_id, _uid) {
+	this.id = _id;
+	this.uid = _uid;
+	var macAddrBuffer = dataUtils.hexDecode(this.uid);
+	this.macAddr = new Buffer(macAddrBuffer);
+	this.nwkAddr = 0;
+	this.power = 'unknown';
+	this.isOn = function() {
+		return (this.power == 'on');
+	}
+}
+
+var Message = function(_layer, _command) {
+	this.layer = _layer;
+	this.command = _command;
+	this.addrType = addrTypes.nwkUnicast;
+	this.nwkAddr = 0;
+	this.endpoint = 0;
+}
+
 var gateway = {
 	id: 'MyFirstGateway',
 	sn: 'GW201601',
-	onCommand: function(command, addr, param) {
-		console.log('on command')
-		console.log(command);
-		var message = {
-			layer: command.layer,
-			command: command.id,
-			addrType: 2,
-			nwkAddr: 0,
-			endpoint: 0
-		};
-		if(addr)
-			message.nwkAddr = addr;
+	// lights: [
+	// 	{
+	// 		id: '1',
+	// 		uid: '8357FE0001881700',
+	// 	},
+	// 	{
+	// 		id: '2',
+	// 		uid: '8B5DF90001881700',
+	// 	},
+	// 	{
+	// 		id: '3',
+	// 		uid: '285EF90001881700',
+	// 	}
+	// ],
+	lights : [
+		new Light('Light1', '8357FE0001881700'),
+		new Light('Light2', '8B5DF90001881700'),
+		new Light('Light3', '285EF90001881700')
+	],
+	onInit: function() {
+		this.onCommand(commands.system.getVersion);
+		for(var light of this.lights) {
+			this.onCommand(commands.network.getNwkAddrByMac, {
+				macAddr: light.macAddr
+			});
+		}
+	},
+	onCommand: function(command, param) {
+		//[ for debug only ----
+		//console.log('on command: ' + command.constructor.name);
+		var commandFound = false;
+		for(var categoryKey in commands) {
+			var category = commands[categoryKey];
+			for(var commandKey in category) {
+				var iCommand = category[commandKey];
+				if(iCommand == command) {
+					console.log('on command: ' + commandKey);
+					commandFound = true;
+					break;
+				}
+			}
+			if(commandFound)
+				break;
+		}		
+		//---- for debug only ]
+		var message = new Message(command.layer, command.id);
+		if(command.buildMessage)
+			command.buildMessage(message, param);
 		this.sendMessage(message);
 	},
-	messageSQ: 0, 
+	onUserCommand: function(commandPath, paramStr) {
+		console.log(`onUserCommand ${commandPath}` + (paramStr ? (': ' + paramStr) : ''));
+		var parts = commandPath.split(".");
+		if(parts.length == 2) {
+			var categoryKey = parts[0];
+			var commandKey = parts[1];
+			var category = commands[categoryKey];
+			if(category) {
+				var command = category[commandKey];
+				if(command) {
+					if(paramStr) {
+						var param = JSON.parse(paramStr);
+						if(param)
+							this.onCommand(command, param);
+						else
+							console.log("error: invalid param, cannot be parsed as JSON");
+					}
+					else
+						this.onCommand(command);
+				}
+				else
+					console.log(`no command of "${commandKey}" found in category "${categoryKey}"`);
+			}
+			else
+				console.log(`no command category of "${categoryKey}" found`);
+		}
+		else
+			console.log("cannot parse commandPath");
+	},
+	messageSQ: 0,
 	sendMessage: function(message) {
 		var dataLength = 0;
 		if(message.data)
@@ -196,9 +355,9 @@ var gateway = {
 		for(var i=0; i<length-1; i++)
 			checksum ^= buffer[i];
 		buffer[length-1] = checksum;
-		console.log("send:");
-		console.log(buffer);
 		myPort.write(buffer);
+		console.log("sent:");
+		console.log(buffer);
 	},
 	updateVersion: function(data) {
 		if(data.length < 3)
@@ -209,6 +368,26 @@ var gateway = {
 			minor: data[2]
 		}
 		console.log(this.version);
+	},
+	getLight: function(key, value) {
+		for(var light of this.lights) {
+			if(key == 'macAddr') {
+				if(light.macAddr.equals(value))
+					return light;
+			}
+			else if(light[key] == value)
+				return light;
+		}
+		return null;
+	},
+	updateLightNwkAddr: function(macAddr, nwkAddr) {
+		var light = this.getLight('macAddr', macAddr);
+		if(light) {
+			light.nwkAddr = nwkAddr;
+			console.log('got nwkAddr: ' + nwkAddr.toString(16) + ' of ' + light.id);
+		}
+		else
+			console.log('no light device found, should crate one.');
 	}
 }
 
