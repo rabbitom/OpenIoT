@@ -23,7 +23,7 @@ process.stdin.on('readable', () => {
 	}
 });
 
-var portName = 'SLAB_USBtoUART';
+var portName = 'USB';//'SLAB_USBtoUART';
 
 var SerialPort = require("serialport");
 SerialPort.list(function (err, ports) {
