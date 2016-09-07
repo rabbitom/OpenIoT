@@ -1,2 +1,9 @@
-gw/node_modules
+.DS_Store
+gw/node_modules/
 gw/certs
+web/node_modules/
+web/browser/aws-iot-sdk-browser-bundle.js
+web/www/aws-configuration.js
+web/www/aws-iot-sdk-browser-bundle.js
+web/www/bundle.js
+

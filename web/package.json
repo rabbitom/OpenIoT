@@ -1,0 +1,11 @@
+{
+	"name": "lighting_control",
+	"version": "0.1.0",
+	"description": "a lighting control webpage",
+	"dependencies": {
+		"aws-iot-device-sdk": "latest"
+	},
+	"scripts": {
+		"browserize": "./scripts/browserize.sh"
+	}
+}
