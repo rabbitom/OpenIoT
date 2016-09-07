@@ -1,4 +1,5 @@
 var dataUtils = require("./data-utils.js");
+var awsIot = require('aws-iot-device-sdk');
 
 var initCommandPath = false;
 var initCommandParam = null;
@@ -114,7 +115,7 @@ function onPortReceive(data) {
 				if(iCommand.layer != rxMessage.layer)
 					break;//not this category
 				if(iCommand.id == commandId) {
-					console.log("got response for command: " + commandKey);
+					console.log("got ack/response for command: " + commandKey);
 					command = iCommand;
 					break;//found command
 				}
@@ -123,10 +124,14 @@ function onPortReceive(data) {
 				break;//found command
 		}
 		if(command) {
-			if((rxMessage.command & 0x40 == 0x40) && command.onAck)
+			if(((rxMessage.command & 0x40) == 0x40) && command.onAck) {
+				console.log("will call onAck");
 				command.onAck(rxMessage);
-			if((rxMessage.command & 0x80 == 0x80) && command.onResponse)
+			}
+			if(((rxMessage.command & 0x80) == 0x80) && command.onResponse) {
+				console.log("will call onResponse");
 				command.onResponse(rxMessage);
+			}
 			if(rxBufferLen == rxMessageLen) {
 				rxBufferLen = 0;
 				break;//no more data to process
@@ -232,6 +237,10 @@ var commands =  {
 	},
 	light: {
 		power: {layer: 5, id: 0x01,
+			onAck: function(message) {
+				var nwkAddr = message.nwkAddr;
+				gateway.onCommand(commands.light.getPower, {'nwkAddr': nwkAddr});
+			},
 			buildMessage: function(message, param) {
 				var light = gateway.getLight('id', param.id);
 				if(light)
@@ -261,27 +270,34 @@ var commands =  {
 		colorTemperature: {layer: 5, id: 0x04},
 		getPower: {layer: 5, id: 0x05,
 			buildMessage: function(message, param) {
-				var light = gateway.getLight('id', param.id);
-				if(light) {
-					message.nwkAddr = light.nwkAddr;
-					message.endpoint = lightingEndpoint;
-					var buffer = new Buffer(2);
-					buffer.fill(0);
-					message.data = buffer;
-					return true;
+				if(param.id) {
+					var light = gateway.getLight('id', param.id);
+					if(light)
+						message.nwkAddr = light.nwkAddr;
+					else
+						return false;
 				}
-				return false;
+				else if(param.nwkAddr)
+					message.nwkAddr = param.nwkAddr;
+				else
+					return false;
+				message.endpoint = lightingEndpoint;
+				var buffer = new Buffer(2);
+				buffer.fill(0);
+				message.data = buffer;
+				return true;
 			},
 			onResponse: function(message) {
 				var light = gateway.getLight('nwkAddr', message.nwkAddr);
 				if(light) {
 					if(message.data) {
 						if(message.data.length == 2) {
-							var power = message.data[2];
+							var power = message.data[1];
 							if(power == lightingPower.on)
 								light.power = 'on';
 							else if(power == lightingPower.off)
 								light.power = 'off';
+							gateway.reportState();
 						}
 					}
 				}
@@ -452,9 +468,28 @@ var gateway = {
 		if(light) {
 			light.nwkAddr = nwkAddr;
 			console.log('got nwkAddr: ' + nwkAddr.toString(16) + ' of ' + light.id);
+			gateway.onCommand(commands.light.getPower, {'nwkAddr': nwkAddr});
 		}
 		else
 			console.log('no light device found, should crate one.');
+	},
+	reportState: function() {
+		var curState = new Object();
+		for(var light of gateway.lights) {
+			curState[light.id] = {
+				power: light.power
+			};
+		}
+		var state = {
+			"state": {
+				"reported": curState
+			}
+		};
+		clientTokenUpdate = thingShadows.update(gateway.id, state);
+		if (clientTokenUpdate)
+			console.log('updated shadow: ' + JSON.stringify(state));
+		else
+			console.log('update shadow failed, operation still in progress');
 	}
 }
 
@@ -463,3 +498,42 @@ var messageLengthMax = 100;
 
 var rxBuffer = new Buffer(messageLengthMax);
 var rxBufferLen = 0;
+
+var thingShadows = awsIot.thingShadow({
+   keyPath: 'certs/private.pem.key',
+  certPath: 'certs/certificate.pem.crt',
+    caPath: 'certs/root-CA.crt',
+  clientId: gateway.id,
+    region: 'ap-northeast-1',
+});
+
+var thingShadowConnected = false;
+var clientTokenUpdate;
+
+thingShadows.on('connect', function() {
+	thingShadows.register(gateway.id);
+	thingShadowConnected = true;
+	setTimeout(gateway.reportState, 5000);
+});
+
+thingShadows.on('disconnect', function() {
+	thingShadowConnected = false;
+});
+
+thingShadows.on('status', function(thingName, stat, clientToken, stateObject) {
+	console.log(`received ${stat} on ${thingName}: ${JSON.stringify(stateObject)}`);
+});
+
+thingShadows.on('delta', function(thingName, stateObject) {
+	console.log(`received delta on ${thingName}: ${JSON.stringify(stateObject)}`);
+	var deltaState = stateObject.state;
+	for(var lightId in deltaState) {
+		var lightState = deltaState[lightId];
+		lightState.id = lightId;
+		gateway.onCommand(commands.light.power, lightState); 
+	}
+});
+
+thingShadows.on('timeout', function(thingName, clientToken) {
+	console.log(`received timeout on ${thingName} with token: ${clientToken}`);
+});

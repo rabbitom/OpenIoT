@@ -3,6 +3,7 @@
 	"version": "0.1.0",
 	"description": "a lighting gateway",
 	"dependencies": {
-		"serialport": "latest"
+		"serialport": "latest",
+		"aws-iot-device-sdk": "latest"
 	}
 }
