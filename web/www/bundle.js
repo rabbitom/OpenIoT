@@ -61,6 +61,8 @@ AWS.config.credentials = new AWS.CognitoIdentityCredentials({
    IdentityPoolId: AWSConfiguration.poolId
 });
 
+var defaultThingName = 'MyFirstGateway';
+
 //
 // Keep track of whether or not we've registered the shadows used by this
 // example.
@@ -109,12 +111,13 @@ const shadows = AWSIoTData.thingShadow({
 //
 shadows.on('delta', function(name, stateObject) {
       console.log('received delta of ' + name + ': ' + JSON.stringify(stateObject));
-      if (name === 'MyFirstGateway') {
+      if (name === defaultThingName) {
             var htmlText = '';
             var lights = stateObject.state;
             for(var light in lights) {
                   var state = lights[light];
-                  document.getElementById(light + '-state').innerHTML = state.power;
+                  //document.getElementById(light + '-state').innerHTML = state.power;
+                  $('#' + light + '-state').bootstrapSwitch('state', (state.power == 'on'));
             }
       }
 });
@@ -131,23 +134,51 @@ shadows.on('status', function(name, statusType, clientToken, stateObject) {
       // The most notable exception to this is if the thing shadow has not
       // yet been created or has been deleted.
       //
-      if (stateObject.code !== 404) {
-            console.log('resync with thing shadow');
-            var opClientToken = shadows.get(name);
-            if (opClientToken === null) {
-            console.log('operation in progress');
+            if (stateObject.code !== 404) {
+                  console.log('resync with thing shadow');
+                  var opClientToken = shadows.get(name);
+                  if (opClientToken === null) {
+                  console.log('operation in progress');
+                  }
             }
-      }
       } else { // statusType === 'accepted'
-      if (name === 'MyFirstGateway') {
-            var htmlText = '';
-            var lights = stateObject.state.reported;
-            for(var light in lights) {
-                  var state = lights[light];
-                  htmlText += ('<p>' + light + ': <span id="' + light + '-state">' + state.power + '</span></p>');
+            if (name === defaultThingName) {
+                  //var htmlText = '';
+                  //$('#lighting-control-div').empty();
+                  $('#lighting-control-div > p').hide();
+                  var lights = stateObject.state.reported;
+                  for(var light in lights) {
+                        var state = lights[light];
+                        ////htmlText += ('<p>' + light + ': <span id="' + light + '-state">' + state.power + '</span></p>');
+                        //htmlText += '<input type="checkbox" class="lightSwitch" id="' + light + '-state" checked>';
+                        var lightSwitch = $('#' + light + '-state');
+                        if(lightSwitch.size() == 0)
+                              $('#lighting-control-div').append('<input type="checkbox" class="lightSwitch" id="' + light + '-state" lightId="' + light + '" checked>');
+                        $('#' + light + '-state').bootstrapSwitch();
+                        $('#' + light + '-state').bootstrapSwitch('state', (state.power == 'on'));
+                  }
+                  //document.getElementById('lighting-control-div').innerHTML = htmlText;
+                  //$(".lightSwitch").bootstrapSwitch();
+                  $('.lightSwitch').on('switchChange.bootstrapSwitch', function(event, state) {
+                        //console.log(event); // jQuery event
+                        //console.log(state); // true | false
+                        var lightId = $(this).attr('lightId');
+                        var curState = new Object();
+                        curState[lightId] = {
+                              power: state ? "on" : "off"
+                        };
+                        var state = {
+                              "state": {
+                                    "desired": curState
+                              }
+                        };
+                        var clientTokenUpdate = shadows.update(defaultThingName, state);
+                        if (clientTokenUpdate)
+                              console.log('updated shadow: ' + JSON.stringify(state));
+                        else
+                              console.log('update shadow failed, operation still in progress');
+                  });
             }
-            document.getElementById('lighting-control-div').innerHTML = htmlText;
-      }
       }
 });
 
@@ -196,7 +227,7 @@ window.shadowConnectHandler = function() {
    // We only register our shadows once.
    //
    if (!shadowsRegistered) {
-      shadows.register('MyFirstGateway', {
+      shadows.register(defaultThingName, {
          persistentSubscribe: true
       });
       shadowsRegistered = true;
@@ -206,7 +237,7 @@ window.shadowConnectHandler = function() {
    // current state of the shadows.
    //
    setTimeout(function() {
-      var opClientToken = shadows.get('MyFirstGateway');
+      var opClientToken = shadows.get(defaultThingName);
       if (opClientToken === null) {
          console.log('operation in progress');
       }
