@@ -1,12 +1,13 @@
 {
-	"name": "lighting-gw",
-	"version": "0.1.0",
-	"description": "a lighting gateway",
-	"bin": {
-		"lighting-gw": "./gw.js"
-	},
-	"dependencies": {
-		"serialport": "latest",
-		"aws-iot-device-sdk": "latest"
-	}
+  "name": "lighting-gw",
+  "version": "0.1.0",
+  "description": "a lighting gateway",
+  "bin": {
+    "lighting-gw": "./gw.js"
+  },
+  "dependencies": {
+    "aws-iot-device-sdk": "latest",
+    "bindings": "^1.2.1",
+    "serialport": "latest"
+  }
 }
