@@ -2,6 +2,8 @@
 var dataUtils = require("./data-utils.js");
 var awsIot = require('aws-iot-device-sdk');
 
+console.log("This is a smart lighting gateway, which communicates to Zigbee Home Automation network via USB dongle, and connects to AWS IoT service.");
+
 var initCommandPath = false;
 var initCommandParam = null;
 var argc = process.argv.length;
