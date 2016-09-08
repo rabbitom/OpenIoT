@@ -6,10 +6,11 @@ confinement: devmode
 
 apps:
     lighting-gw:
-        command: bin/gw
+        command: bin/lighting-gw
 
 parts:
     lighting-gw:
         plugin: nodejs
         node-packages:
-            - lighting_gateway
+            - lighting-gw
+	node-engine: 6.5.0
