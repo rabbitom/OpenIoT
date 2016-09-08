@@ -12,7 +12,4 @@ parts:
     lighting-gw:
         plugin: nodejs
         source: .
-        node-packages:
-            - aws-iot-device-sdk
-            - serialport
         node-engine: 6.5.0
