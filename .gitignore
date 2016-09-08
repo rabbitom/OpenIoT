@@ -1,6 +1,10 @@
 .DS_Store
 gw/node_modules/
-gw/certs
+gw/certs/
+gw/parts/
+gw/prime/
+gw/stage/
+gw/lighting-gw_0.1.0_amd64.snap
 web/node_modules/
 web/browser/aws-iot-sdk-browser-bundle.js
 web/www/aws-configuration.js
