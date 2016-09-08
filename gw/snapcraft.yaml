@@ -13,4 +13,4 @@ parts:
         plugin: nodejs
         node-packages:
             - lighting-gw
-	node-engine: 6.5.0
+        node-engine: 6.5.0
