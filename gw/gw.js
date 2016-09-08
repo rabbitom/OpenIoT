@@ -1,3 +1,4 @@
+#!/usr/bin/env node
 var dataUtils = require("./data-utils.js");
 var awsIot = require('aws-iot-device-sdk');
 
