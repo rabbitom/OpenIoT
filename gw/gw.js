@@ -441,8 +441,12 @@ var gateway = {
 		for(var i=0; i<length-1; i++)
 			checksum ^= buffer[i];
 		buffer[length-1] = checksum;
-		myPort.write(buffer);
-		console.log("sent:");
+		if(myPort) {
+			myPort.write(buffer);
+			console.log("sent:");
+		}
+		else
+			console.log("could not send:");
 		console.log(buffer);
 	},
 	updateVersion: function(data) {
