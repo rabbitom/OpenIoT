@@ -7,7 +7,7 @@ confinement: strict
 apps:
     lighting-gw:
         command: bin/lighting-gw
-        plugs: [serial-port, network, network-bind, home]
+        plugs: [serial-port, network, home]
 
 parts:
     lighting-gw:
