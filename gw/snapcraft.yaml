@@ -2,7 +2,8 @@ name: lighting-gw
 version: "0.1.0"
 summary: Connect local lighing devices to cloud
 description: A smartlighting gateway connected to AWS IoT
-confinement: strict 
+# confinement: strict 
+confinement: devmode
 
 apps:
     lighting-gw:
