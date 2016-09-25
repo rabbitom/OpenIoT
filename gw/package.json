@@ -7,7 +7,6 @@
   },
   "dependencies": {
     "aws-iot-device-sdk": "latest",
-    "bindings": "^1.2.1",
     "serialport": "latest"
   }
 }
