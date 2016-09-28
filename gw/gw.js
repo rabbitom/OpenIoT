@@ -506,10 +506,14 @@ var messageLengthMax = 100;
 var rxBuffer = new Buffer(messageLengthMax);
 var rxBufferLen = 0;
 
+console.log("environment:");
+console.log(process.env);
+var path = process.env.SNAP_DATA;
+
 var thingShadows = awsIot.thingShadow({
-   keyPath: 'certs/private.pem.key',
-  certPath: 'certs/certificate.pem.crt',
-    caPath: 'certs/root-CA.crt',
+   keyPath: path + '/certs/private.pem.key',
+  certPath: path + '/certs/certificate.pem.crt',
+    caPath: path + '/certs/root-CA.crt',
   clientId: gateway.id,
     region: 'ap-northeast-1',
 });
