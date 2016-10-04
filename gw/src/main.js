@@ -83,14 +83,46 @@ function onPortOpen(error) {
 	if(initCommandPath)
 		host.onUserCommand(initCommandPath, initCommandParam);
 	else {
-		host.loadDevices([
-			new Light('Light1', '8357FE0001881700'),
-			new Light('Light2', '8B5DF90001881700'),
-			new Light('Light3', '285EF90001881700')
-		]);
+		// host.loadDevices([
+		// 	{id: 'Light1', uid: '8357FE0001881700'},
+		// 	{id: 'Light2', uid: '8B5DF90001881700'},
+		// 	{id: 'Light3', uid: '285EF90001881700'}
+		// ]);
+		host.on("versionUpdated", function(version) {
+			console.log("version updated: " + JSON.stringify(version));
+		});
+		host.on("epidUpdated", function(epidValue) {
+			console.log("epid updated: " + epidValue);
+		});
+		host.on("lightPowerUpdated", function(light) {
+			console.log("light power updated: " + JSON.stringify(light));
+		});
+		host.init();
 	}
 }
 
 function onPortReceive(data) {
 	host.onReceive(data);
 }
+
+//host application
+
+function reportState() {
+    var curState = new Object();
+    for(var light of gateway.lights) {
+        curState[light.id] = {
+            power: light.power
+        };
+    }
+    var state = {
+        "state": {
+            "reported": curState
+        }
+    };
+    console.log('updated shadow: ' + JSON.stringify(state));
+    // clientTokenUpdate = thingShadows.update(gateway.id, state);
+    // if (clientTokenUpdate)
+    //     console.log('updated shadow: ' + JSON.stringify(state));
+    // else
+    //     console.log('update shadow failed, operation still in progress');
+};

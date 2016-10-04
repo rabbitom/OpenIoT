@@ -1,10 +1,66 @@
 var dataUtils = require("./data-utils.js");
+var constants = require("./zha-constants.js");
+var events = require("events");
+const assert = require("assert");
+
+var commands = constants.commands;
 
 function ZHAHost(port) {
+    events.EventEmitter.call(this);
     this.serialPort = port;
     this.messageSQ = 0;
-    this.onInit();
+    this.on("networkSetResponse", function(message) {
+        console.log("network set");
+        this.emit("versionUpdated", message.dataObject);
+    });
+    this.on("getVersionAck", function(message) {
+        this.emit("versionUpdated", message.dataObject);
+    });
+    this.on("networkParamAck", function(message) {
+        var messageData = message.dataObject;
+        if(messageData.status == constants.commandStatus.ok) {
+            if(messageData.operation == constants.networkOperations.read) {
+                for(var configurationKey in constants.networkConfigurations) {
+                    var configurationId = constants.networkConfigurations[configurationKey];
+                    if(configurationId == messageData.configuration) {
+                        var param = new Object();
+                        param[configurationKey] = messageData.value;
+                        this.updateNetworkParam(param);
+                        break;
+                    }
+                }
+            }
+        }
+    });
+    this.on("updateAddressResponse", function(message) {
+        var messageData = message.dataObject;
+        this.updateLightNwkAddr(messageData.macAddr, messageData.nwkAddr);
+    });
+    this.on("getNwkAddrByMacResponse", function(message) {
+        var messageData = message.dataObject;
+        if(messageData.status == constants.commandStatus.ok)
+            this.updateLightNwkAddr(message.dataObject.macAddr, message.nwkAddr);
+    });
+    this.on("powerAck", function(message) {
+        var nwkAddr = message.nwkAddr;
+        this.onCommand(commands.light.getPower, {'nwkAddr': nwkAddr});
+    });
+    this.on("getPowerResponse", function(message) {
+        var light = this.getLight('nwkAddr', message.nwkAddr);
+        if(light) {
+            if(message.dataObject) {
+                var power = message.dataObject.power;
+                if(power == constants.lightingPower.on)
+                    light.power = 'on';
+                else if(power == constants.lightingPower.off)
+                    light.power = 'off';
+                this.emit("lightPowerUpdated", light);
+            }
+        }
+    });
 }
+
+ZHAHost.prototype.__proto__ = events.EventEmitter.prototype;
 
 function ZHALight(_id, _uid) {
 	this.id = _id;
@@ -21,7 +77,7 @@ function ZHALight(_id, _uid) {
 var Message = function(_layer, _command) {
 	this.layer = _layer;
 	this.command = _command;
-	this.addrType = addrTypes.nwkUnicast;
+	this.addrType = constants.addrTypes.nwkUnicast;
 	this.nwkAddr = 0;
 	this.endpoint = 0;
 }
@@ -32,232 +88,9 @@ var messageLengthMax = 100;
 var rxBuffer = new Buffer(messageLengthMax);
 var rxBufferLen = 0;
 
-var addrTypes = {
-	multicast: 1,
-	nwkUnicast: 2,
-	macUnicast: 3,
-	broadcast: 0x0f,
-}
-
-var commandStatus = {
-	ok: 0,
-	fail: 1
-}
-
-var lightingPower = {
-	off: 0,
-	on: 1,
-	toggle: 2
-}
-
-var lightingEndpoint = 0xb;
-
-var nwkAddrAll = 0xffff;
-
-var commands =  {
-	system: {
-		networkSet: {layer: 1, id: 0, data: {
-            response: {
-                hardwarePlatform: 1,
-                major: 1,
-                minor: 1
-            }
-        }},
-		getVersion: {layer: 1, id: 1, data: {
-            ack: {
-                hardwarePlatform: 1,
-                major: 1,
-                minor: 1
-            }
-        }},
-		reset: {layer: 1, id: 2},
-		restore: {layer: 1, id: 3, data: {
-            send: {
-                configuration: {length: 1, value: 0x03}
-            }
-        }},
-		networkParam: {layer: 1, id: 4, data: {
-            send: {
-                operation: {length: 1, values:{read:0, write:1}},
-                configuration: {length: 1, values:{channel:1, epid: 3}}
-            },
-            ack: {
-                operation: 1,
-                configuration: 1,
-                status: 1,
-                value: -1
-            }
-        }}
-	},
-	network: {
-		switchNetwork: {layer: 2, id: 1, data: {
-            send: {time: {length:1, values:{off: 0, on:1, duration: -1}}},
-            ack: {status: 1}
-        }},
-		updateAddress: {layer: 2, id: 2, data: {
-            response: {nwkAddr: 2, macAddr: 8, deviceType: 1}
-        }},
-        //getEndpoints: {layer: 2, id: 3},
-		getNwkAddrByMac: {layer: 2, id: 5, addrMode: 3, data: {
-            send: {
-                macAddr: {length: 8},
-                requestType: {length: 1, value: 0},
-                startIndex: {length: 1, value: 0}
-            },
-            response: {
-                status: 1,
-                macAddr: 8
-            }
-        }},
-		getMacAddrByNwk: {layer: 2, id: 6, data: {
-            send: {
-                requestType: {length:1, value: 0},
-                startIndex: {length:1, value: 0}
-            },
-            response: {
-                status: 1,
-                macAddr: 8
-            }
-        }},
-        detach: {layer: 2, id: 21, data: {
-            response: {
-                status: 1,
-                macAddr: 8
-            }
-        }}
-	},
-	ha: {
-		//getEndpointInfo: {layer: 4, id: 0x01},
-		restore: {layer: 4, id: 2, data: {
-            response: {
-                status: 1
-            }
-        }},
-		blink: {layer: 4, id: 3, data: {
-            send: {
-                time: {length: 1}
-            },
-            response: {
-                status: 1
-            }
-        }},
-		// addGroup: {layer: 4, id: 0x04},
-		// removeGroup: {layer: 4, id: 0x05},
-		// clearGroups: {layer: 4, id: 0x06},
-		// getGroup: {layer: 4, id: 0x07},
-		// getSceneCount: {layer: 4, id: 0x08},
-		// getSceneStatus: {layer: 4, id: 0x09},
-		// saveScene: {layer: 4, id: 0x0A},
-		// callScene: {layer: 4, id: 0x0B},
-		// removeScene: {layer: 4, id: 0x0C},
-		// clearScenes: {layer: 4, id: 0x0D},
-		// getScene: {layer: 4, id: 0x0E}
-	},
-	light: {
-		power: {layer: 5, id: 1, data: {
-            send: {
-                operation: {length: 1, values: {off: 0, on: 1, toggle: 2}}
-            }
-        }},
-		lum: {layer: 5, id: 2, data: {
-            send: {
-                operation: {length: 1, value: 0x04},
-                lum: {length: 1},
-                duration: {length: 2}
-            }
-        }},
-		hueSaturation: {layer: 5, id: 3, data: {
-            send: {
-                operation: {length: 1, value: 0x07},
-                hue: {length: 1},
-                saturation: {length: 1},
-                duration: {length: 2}
-            }
-        }},
-		colorTemperature: {layer: 5, id: 4, data: {
-            send: {
-                colorTemperature: {length: 2},
-                duration: {length: 2}
-            }
-        }},
-		getPower: {layer: 5, id: 5, data: {
-            send: {
-                propertyId: {length: 2, value: 0}
-            },
-            response: {
-                status: 1,
-                power: 1
-            }
-        }},
-		getLum: {layer: 5, id: 6, data: {
-            send: {
-                propertyId: {length: 2, value: 0}
-            },
-            response: {
-                status: 1,
-                lum: 1
-            }
-        }},
-		getHueSaturation: {layer: 5, id: 7, data: {
-            send: {
-                propertyId: {length: 2, vlaue: 0}
-            },
-            response: {
-                status: 1,
-                hue: 1,
-                saturation: 1
-            }
-        }},
-		getColorTemperature: {layer: 5, id: 8, data: {
-            send: {
-                propertyId: {length: 2, vlaue: 0}
-            },
-            response: {
-                status: 1,
-                colorTemperature: 2
-            }
-        }}
-	}
-}
-
-commands.system.networkSet.onResponse = function(host, message) {
-    console("network is set");
-    if(message.data)
-        host.updateVersion(message.data);
-};
-
-commands.system.getVersion.onAck = function(host, message) {
-    if(message.data)
-        host.updateVersion(message.data);
-};
-
-//will not send this message, only receive when device is on
-commands.network.updateAddress.onResponse = function(host, message) {
-    var macAddr = message.data.slice(2,10);
-    host.updateLightNwkAddr(macAddr, message.nwkAddr);
-};
-
 commands.network.getNwkAddrByMac.buildMessage = function(host, message, param) {
-    message.addrType = addrTypes.macUnicast;
-    var buffer = new Buffer(10);
-    buffer.fill(0);
-    param.macAddr.copy(buffer, 0, 0);
-    message.data =  buffer;
+    message.addrType = constants.addrTypes.macUnicast;
     return true;
-};
-
-commands.network.getNwkAddrByMac.onResponse = function(host, message) {
-    if(message.data) {
-        if((message.data.length == 9) && (message.data[0] == commandStatus.ok)) {
-            var macAddr = message.data.slice(1);
-            host.updateLightNwkAddr(macAddr, message.nwkAddr);
-        }
-    }
-};
-
-commands.light.power.onAck = function(host, message) {
-    var nwkAddr = message.nwkAddr;
-    host.onCommand(commands.light.getPower, {'nwkAddr': nwkAddr});
 };
 
 commands.light.power.buildMessage = function(host, message, param) {
@@ -265,23 +98,10 @@ commands.light.power.buildMessage = function(host, message, param) {
     if(light)
         message.nwkAddr = light.nwkAddr;
     else if(param.id == 'all')
-        message.nwkAddr = nwkAddrAll;
+        message.nwkAddr = constants.nwkAddrAll;
     else
         return false;
-    message.endpoint = lightingEndpoint;
-    var buffer = new Buffer(1);
-    if(param.power) {
-        if(param.power == 'on')
-            buffer[0] = lightingPower.on;
-        else if(param.power == 'off')
-            buffer[0] = lightingPower.off;
-        else
-            buffer[0] = lightingPower.toggle;
-        message.data = buffer;
-        return true;
-    }
-    else
-        return false;
+    message.endpoint = constants.lightingEndpoint;
 };
 
 commands.light.getPower.buildMessage = function(host, message, param) {
@@ -296,46 +116,8 @@ commands.light.getPower.buildMessage = function(host, message, param) {
         message.nwkAddr = param.nwkAddr;
     else
         return false;
-    message.endpoint = lightingEndpoint;
-    var buffer = new Buffer(2);
-    buffer.fill(0);
-    message.data = buffer;
+    message.endpoint = constants.lightingEndpoint;
     return true;
-};
-
-commands.light.getPower.onResponse = function(host, message) {
-    var light = host.getLight('nwkAddr', message.nwkAddr);
-    if(light) {
-        if(message.data) {
-            if(message.data.length == 2) {
-                var power = message.data[1];
-                if(power == lightingPower.on)
-                    light.power = 'on';
-                else if(power == lightingPower.off)
-                    light.power = 'off';
-                host.reportState();
-            }
-        }
-    }
-};
-
-ZHAHost.prototype.onInit = function() {
-    this.onCommand(commands.system.getVersion);
-    this.onCommand(commands.system.networkParam, {
-        operation: 'read',
-        configuration: 'epid'
-    });
-};
-
-ZHAHost.prototype.loadDevices = function(devices) {
-    if(devices) {
-        this.lights = devices;
-        for(var light of this.lights) {
-            this.onCommand(commands.network.getNwkAddrByMac, {
-                macAddr: light.macAddr
-            });
-        }
-    }
 };
 
 ZHAHost.prototype.onCommand = function(command, param) {
@@ -364,40 +146,8 @@ ZHAHost.prototype.onCommand = function(command, param) {
             return;
         }
     }
-    else if(command.data.send) {
-        var dataSend = command.data.send;
-        var dataLength = 0;
-        for(var dataKey in dataSend) {
-            var dataField = dataSend[dataKey];
-            dataLength += dataField.length;
-        }
-        var dataBuffer = new Buffer(dataLength);
-        dataBuffer.fill(0);
-        var dataOffset = 0;
-        for(var dataKey in dataSend) {
-            console.log(dataKey);
-            var dataField = dataSend[dataKey];
-            var dataValue = dataField.value;
-            if(dataValue == null) {
-                var paramValue = param[dataKey];
-                if(paramValue) {
-                    if(dataField.values)
-                        dataValue = dataField.values[paramValue];
-                    else
-                        dataValue = paramValue;
-                }
-            }
-            var dataFieldLength = dataField.length;
-            if(dataFieldLength == 1)
-                dataBuffer[dataOffset] = dataValue;
-            else if(dataFieldLength == 2)
-                dataBuffer.writeUInt16LE(dataValue, dataOffset);
-            else
-                dataValue.copy(dataBuffer, 0, dataOffset, dataOffset+dataFieldLength);
-            dataOffset += dataFieldLength;
-        }
-        message.data = dataBuffer;
-    }
+    if(command.data.send)
+        message.data = this.makeCommandData(command.data.send, param);
     this.sendMessage(message);
 };
 
@@ -454,65 +204,10 @@ ZHAHost.prototype.sendMessage = function(message) {
     buffer[length-1] = checksum;
     if(this.serialPort) {
         this.serialPort.write(buffer);
-        console.log("sent:");
+        console.log("sent: " + dataUtils.hexString(buffer));
     }
     else
-        console.log("could not send:");
-    console.log(buffer);
-};
-
-ZHAHost.prototype.updateVersion = function(data) {
-    if(data.length < 3)
-        return;
-    this.version = {
-        hardwarePlatform: data[0],
-        major: data[1],
-        minor: data[2]
-    }
-    console.log(this.version);
-};
-
-ZHAHost.prototype.getLight = function(key, value) {
-    for(var light of this.lights) {
-        if(key == 'macAddr') {
-            if(light.macAddr.equals(value))
-                return light;
-        }
-        else if(light[key] == value)
-            return light;
-    }
-    return null;
-};
-
-ZHAHost.prototype.updateLightNwkAddr = function(macAddr, nwkAddr) {
-    var light = this.getLight('macAddr', macAddr);
-    if(light) {
-        light.nwkAddr = nwkAddr;
-        console.log('got nwkAddr: ' + nwkAddr.toString(16) + ' of ' + light.id);
-        gateway.onCommand(commands.light.getPower, {'nwkAddr': nwkAddr});
-    }
-    else
-        console.log('no light device found, should crate one.');
-};
-
-ZHAHost.prototype.reportState = function() {
-    var curState = new Object();
-    for(var light of gateway.lights) {
-        curState[light.id] = {
-            power: light.power
-        };
-    }
-    var state = {
-        "state": {
-            "reported": curState
-        }
-    };
-    console.log('updated shadow: ' + JSON.stringify(state));
-    // clientTokenUpdate = thingShadows.update(gateway.id, state);
-    // if (clientTokenUpdate)
-    //     console.log('updated shadow: ' + JSON.stringify(state));
-    // else
-    //     console.log('update shadow failed, operation still in progress');
+        console.log("could not send: " + dataUtils.hexString(buffer));
 };
 
 ZHAHost.prototype.onReceive = function(data) {
@@ -547,16 +242,17 @@ ZHAHost.prototype.onReceive = function(data) {
 		var commandId = rxMessage.command & 0x3F;
         var isAck = ((rxMessage.command & 0x40) == 0x40);
         var isResponse = ((rxMessage.command & 0x80) == 0x80);
-		var command = false;
+		var command = null;
+        var commandKey = null;
 		for(var categoryKey in commands) {
 			var category = commands[categoryKey];
-			for(var commandKey in category) {
-				var iCommand = category[commandKey];
+			for(var iCommandKey in category) {
+				var iCommand = category[iCommandKey];
 				if(iCommand.layer != rxMessage.layer)
 					break;//not this category
 				if(iCommand.id == commandId) {
-					console.log("got " + (isAck ? "ack": (isResponse ? "response" : "unkown")) + " for command: " + commandKey);
 					command = iCommand;
+                    commandKey = iCommandKey;
 					break;//found command
 				}
 			}
@@ -564,14 +260,17 @@ ZHAHost.prototype.onReceive = function(data) {
 				break;//found command
 		}
 		if(command) {
-			if(isAck && command.onAck) {
-				//console.log("will call onAck");
-				command.onAck(this, rxMessage);
-			}
-			if(isResponse && command.onResponse) {
-				//console.log("will call onResponse");
-				command.onResponse(this, rxMessage);
-			}
+            var feedback = isAck ? "Ack" : (isResponse ? "Response" : null);
+            if(feedback) {
+                console.log("got " + feedback + " for command: " + commandKey);
+                var feedbackData = isAck ? command.data.ack : command.data.response;
+                if(feedbackData) {
+                    var dataObject = this.parseCommandData(feedbackData, rxMessage.data);
+                    console.log(dataObject);
+                    rxMessage.dataObject = dataObject;
+                    this.emit(commandKey + feedback, rxMessage);
+                }
+            }
 			if(rxBufferLen == rxMessageLen) {
 				rxBufferLen = 0;
 				break;//no more data to process
@@ -582,6 +281,126 @@ ZHAHost.prototype.onReceive = function(data) {
 		rxBuffer.copy(rxBuffer, 0, rxMessageLen);
 		rxBufferLen -= rxMessageLen;
 	}
+};
+
+ZHAHost.prototype.parseCommandData = function(dataStruct, buffer) {
+    var data = new Object();
+    var dataOffset = 0;
+    for(dataKey in dataStruct) {
+        var dataLength = dataStruct[dataKey];
+        if(dataLength == -1)
+            dataLength = buffer.length - dataOffset;
+        else if(dataLength + dataOffset > buffer.length)
+            break;
+        if(dataLength == 1)
+            data[dataKey] = buffer[dataOffset];
+        else if(dataLength == 2)
+            data[dataKey] = buffer.readUInt16LE(dataOffset);
+        else {
+            var dataBuffer = new Buffer(dataLength);
+            buffer.copy(dataBuffer, 0, dataOffset, dataOffset + dataLength);
+            data[dataKey] = dataBuffer;
+        }
+        dataOffset += dataLength;
+    }
+    return data;
+}
+
+ZHAHost.prototype.makeCommandData = function(dataStruct, param) {
+    var dataLength = 0;
+    for(var dataKey in dataStruct) {
+        var dataField = dataStruct[dataKey];
+        dataLength += dataField.length;
+    }
+    var dataBuffer = new Buffer(dataLength);
+    dataBuffer.fill(0);
+    var dataOffset = 0;
+    for(var dataKey in dataStruct) {
+        // console.log("dataKey: " + dataKey);
+        var dataField = dataStruct[dataKey];
+        // if(dataField.values)
+        //     console.log("dataValues: " + JSON.stringify(dataField.values));
+        var dataValue = dataField.value;//使用预定义的固定值
+        if(dataValue == null) {
+            var paramValue = param[dataKey];//使用参数中提供的值
+            if(paramValue) {
+                // console.log("paramValue: " + paramValue);
+                if((dataField.values) && (typeof paramValue == "string"))//如果预定义了可选值列表，参数值作为可选值的键
+                    dataValue = dataField.values[paramValue];
+                else//直接使用参数值
+                    dataValue = paramValue;
+            }
+            assert((dataValue != null), "dataValue for " + dataKey + " is null!");
+        }
+        var dataFieldLength = dataField.length;
+        if(dataFieldLength == 1)
+            dataBuffer[dataOffset] = dataValue;
+        else if(dataFieldLength == 2)
+            dataBuffer.writeUInt16LE(dataValue, dataOffset);
+        else
+            dataValue.copy(dataBuffer, 0, dataOffset, dataOffset+dataFieldLength);
+        dataOffset += dataFieldLength;
+    }
+    return dataBuffer;
+}
+
+//zha application
+
+ZHAHost.prototype.init = function() {
+    //this.onCommand(commands.system.getVersion);
+    this.onCommand(commands.system.networkParam, {
+        operation: 'read',
+        configuration: 'epid'
+    });
+};
+
+ZHAHost.prototype.loadDevices = function(devices) {
+    if(devices) {
+        this.lights = new Array();
+        for(var device of devices) {
+            var light = new ZHALight(device.id, device.uid);
+            this.lights.push(light);
+            this.onCommand(commands.network.getNwkAddrByMac, {
+                macAddr: light.macAddr
+            });
+        }
+    }
+};
+
+ZHAHost.prototype.updateNetworkParam = function(param) {
+    if(this.networkParam == null)
+        this.networkParam = new Object();
+    for(var paramKey in param) {
+        var paramValue = param[paramKey];
+        this.networkParam[paramKey] = paramValue;
+        if(paramValue instanceof Buffer)
+            paramValue = paramValue.toString("hex").toUpperCase();
+        this.emit(paramKey + "Updated", paramValue);
+    }
+    console.log("network param updated: " + JSON.stringify(this.networkParam));
+}
+
+ZHAHost.prototype.getLight = function(key, value) {
+    for(var light of this.lights) {
+        if(key == 'macAddr') {
+            if(light.macAddr.equals(value))
+                return light;
+        }
+        else if(light[key] == value)
+            return light;
+    }
+    return null;
+};
+
+ZHAHost.prototype.updateLightNwkAddr = function(macAddr, nwkAddr) {
+    var light = this.getLight('macAddr', macAddr);
+    if(light) {
+        light.nwkAddr = nwkAddr;
+        console.log('got nwkAddr: ' + nwkAddr.toString(16) + ' of ' + light.id);
+        this.onCommand(commands.light.getPower, {'nwkAddr': nwkAddr});
+    }
+    else
+        console.log('no light device found, should create one.');
 };
 
 exports.host = ZHAHost;
