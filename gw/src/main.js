@@ -109,7 +109,7 @@ function onPortReceive(data) {
 
 function reportState() {
     var curState = new Object();
-    for(var light of gateway.lights) {
+    for(var light of host.lights) {
         curState[light.id] = {
             power: light.power
         };

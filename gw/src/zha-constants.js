@@ -63,7 +63,7 @@ var commands =  {
 	},
 	network: {
 		switchNetwork: {layer: 2, id: 1, data: {
-            send: {duration: {length:1, values:{off: 0, on:1}}},
+            send: {duration: {length:1, values:{off: 0, on:0xff}}},
             ack: {status: 1}
         }},
 		updateAddress: {layer: 2, id: 2, data: {

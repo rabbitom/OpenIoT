@@ -377,7 +377,8 @@ ZHAHost.prototype.updateNetworkParam = function(param) {
             paramValue = paramValue.toString("hex").toUpperCase();
         this.emit(paramKey + "Updated", paramValue);
     }
-    console.log("network param updated: " + JSON.stringify(this.networkParam));
+    console.log("network param updated:");
+    console.log(this.networkParam);
 }
 
 ZHAHost.prototype.getLight = function(key, value) {
