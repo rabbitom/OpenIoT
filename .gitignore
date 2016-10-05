@@ -1,6 +1,6 @@
 .DS_Store
 gw/node_modules/
-gw/certs/
+gw/data/
 gw/parts/
 gw/prime/
 gw/stage/

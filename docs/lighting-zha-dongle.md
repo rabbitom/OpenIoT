@@ -194,24 +194,23 @@ USB dongle作为协调器建立和维护Zigbee网络，灯具作为节点加入�
 ----|-----|-----|-----|-----|-----------|-----|-----|-----|-----------------------------------------------|-----
 0xFE|	0x13|	0x02|	0x95|	0x02|	0x34	0x12|	0x00|	0x88|	0x00|	0x08	0x07	0x06	0x05	0x04	0x03	0x02	0x01|	0xFF
 
-- HA标准命令
-+ + 4.2 恢复远端设备至出厂状态
++ + 2.22 从网络中移除设备并将其恢复出厂设置  
 
-命令：  
+命令：
 
-帧头|帧长|命令层级|命令代码|地址模式|网络地址|端点|帧序号|校验
-----|-----|-----|-----|-----|-----------|-----|-----|-----
-0xFE|	0x0A|	0x04|	0x02|	0x02|	0x34	0x12|	0x0B|	0x88|	0xFF
+帧头|帧长|命令层级|命令代码|地址模式|网络地址|端点|帧序号|MAC地址|校验
+----|-----|-----|-----|-----|-----------|-----|-----|-----|-----------------------------------------------|-----
+0xFE|	0x12|	0x02|	0x16|	0x02|	0x34	0x12|	0x00|	0x88|	0x08	0x07	0x06	0x05	0x04	0x03	0x02	0x01|	0xFF
 
 回应：
 
 帧头|帧长|命令层级|命令代码|地址模式|网络地址|端点|帧序号|状态|校验
 ----|-----|-----|-----|-----|-----------|-----|-----|-----|-----
-0xFE|	0x0B|	0x04|	0x82|	0x02|	0x34	0x12|	0x0B|	0x88|	0x00|	0xFF
+0xFE|	0x0B|	0x02|	0x56|	0x02|	0x34	0x12|	0x00|	0x88|	0x00|	0xFF
 
-其中，【状态】为0x01表示远端设备不支持此命令。
-若支持，远端设备还会发送“2.21 离网设备上报”消息。
+若操作成功，网关还将收到一条“2.21 离网设备上报”消息。
 
+- HA标准命令
 + + 4.3 闪烁设备  
 设置远端设备闪烁指定的时间，用于在现场寻找一个特定的设备。
 
@@ -247,21 +246,25 @@ USB dongle作为协调器建立和维护Zigbee网络，灯具作为节点加入�
 
 命令：
 
-帧头|帧长|命令层级|命令代码|地址模式|网络地址|端点|帧序号|操作命令|亮度|【调光时间】|校验
+帧头|帧长|命令层级|命令代码|地址模式|网络地址|端点|帧序号|操作命令|【亮度】|【调光时间】|校验
 ----|-----|-----|-----|-----|-----------|-----|-----|-----|-----|-----------|-----
 0xFE|	0x0E|	0x05|	0x02|	0x02|	0x34	0x12|	0x0B|	0x88|	0x04|	0x7F|	0x02	0x00|	0xFF
 
-其中，【调光时间】表示灯用多长时间达到指定状态，单位是秒
+其中：  
+【亮度】的取值范围是0~255  
+【调光时间】表示灯用多长时间达到指定状态，单位是秒
 
 + + 5.3 调色调和饱和度
 
 命令：
 
-帧头|帧长|命令层级|命令代码|地址模式|网络地址|端点|帧序号|操作命令|色调|饱和度|【调光时间】|校验
+帧头|帧长|命令层级|命令代码|地址模式|网络地址|端点|帧序号|操作命令|【色调】|【饱和度】|【调光时间】|校验
 ----|-----|-----|-----|-----|-----------|-----|-----|-----|-----|-----|-----------|-----
 0xFE|	0x0E|	0x05|	0x02|	0x02|	0x34	0x12|	0x0B|	0x88|	0x07|	0x7F|	0x40|	0x02	0x00|	0xFF
 
-其中，【调光时间】表示灯用多长时间达到指定状态，单位是秒
+其中：  
+【色调】与【饱和度】的取值范围都是0~254  
+【调光时间】表示灯用多长时间达到指定状态，单位是秒
 
 + + 5.4 调色温
 
@@ -329,3 +332,193 @@ USB dongle作为协调器建立和维护Zigbee网络，灯具作为节点加入�
 帧头|帧长|命令层级|命令代码|地址模式|网络地址|端点|帧序号|状态|色温|校验
 ----|-----|-----|-----|-----|-----------|-----|-----|-----|-----------|-----
 0xFE|	0x0D|	0x05|	0x88|	0x02|	0x34	0x12|	0x0B|	0x88|	0x00|	0x01	0x01|	0xFF
+
+## 使用lighting-gw网关程序测试
+lighting-gw网关程序中已经实现了以上各条命令，如果您的程序也用JavaScript编写，可以直接使用lighting-gw的代码。  
+如果您使用其他语言，则可以按照下文的介绍，通过在lighting-gw的主程序内输入命令执行操作，然后查看接收和发送的数据，作为参考。
+
+1. 首先，请确认您已经安装了nodejs和npm，建议您使用6.5.0或以上版本的nodejs：
+>$ node -v  
+>v6.5.0
+
+2. 下载OpenIoT工程：
+>$ git clone https://git.oschina.net/erabbit/OpenIoT.git OpenIoT  
+>$ cd OpenIoT/gw  
+>$ mkdir data
+
+3. 运行主程序（由于要使用串口，此处可能需要sudo权限）：
+>$ src/main.js
+<pre>
+This is a smart lighting gateway based on AWS IoT, which communicates to Zigbee Home Automation network via USB dongle.
+serial port opened!
+on command: networkParam
+sent: FE 0C 01 04 02 00 00 00 01 00 03 F7 
+failed to open devices file due to error: Error: ENOENT: no such file or directory, open 'data/devices.json'
+received:
+&lt;Buffer fe 15 01 44 02 00 00 00 01 00 03 00 86 13 96 02 00 4b 12 00 f6&gt;
+parse rx message: FE 15 01 44 02 00 00 00 01 00 03 00 86 13 96 02 00 4B 12 00 F6 
+got Ack for command: networkParam
+{ operation: 0,
+  configuration: 3,
+  status: 0,
+  value: &lt;Buffer 86 13 96 02 00 4b 12 00&gt; }
+<strong>epid updated: 86139602004B1200</strong>
+</pre>
+如上文，可将epid用作dongle的唯一标识。
+
+4. 打开网络，以搜索设备：
+> network.switchNetwork {"duration":"on"}
+<pre>
+onUserCommand network.switchNetwork: {"duration":"on"}
+on command: switchNetwork
+sent: FE 0B 02 01 02 00 00 00 02 FF 09 
+received:
+&lt;Buffer fe 0b 02 41 02 00 00 00 02 00 b6&gt;
+parse rx message: FE 0B 02 41 02 00 00 00 02 00 B6 
+got Ack for command: switchNetwork
+{ status: 0 }
+
+received:
+&lt;Buffer fe 15 02 82 02 02 e3 00 00 02 e3 0d 83 dd 01 00 4b 12 00 01 63 fe 15 02 82 02 02 e3 00 01 02 e3 0d 83 dd 01 00 4b 12 00 01 62&gt;
+parse rx message: FE 15 02 82 02 02 E3 00 00 02 E3 0D 83 DD 01 00 4B 12 00 01 63 
+got Response for command: updateAddress
+{ nwkAddr: 58114,
+  macAddr: &lt;Buffer 0d 83 dd 01 00 4b 12 00&gt;,
+  deviceType: 1 }
+<strong>found new light: {"id":"Light1","uid":"0D83DD01004B1200"}</strong>
+on command: getPower
+sent: FE 0C 05 05 02 02 E3 0B 03 00 00 19 
+parse rx message: FE 15 02 82 02 02 E3 00 01 02 E3 0D 83 DD 01 00 4B 12 00 01 62 
+got Response for command: updateAddress
+{ nwkAddr: 58114,
+  macAddr: &lt;Buffer 0d 83 dd 01 00 4b 12 00&gt;,
+  deviceType: 1 }
+got nwkAddr: e302 of Light1
+on command: getPower
+sent: FE 0C 05 05 02 02 E3 0B 04 00 00 1E 
+received:
+&lt;Buffer fe 0b 05 45 02 02 e3 0b 03 00 5e fe 0b 05 45 02 02 e3 0b 04 00 59&gt;
+parse rx message: FE 0B 05 45 02 02 E3 0B 03 00 5E 
+got Ack for command: getPower
+parse rx message: FE 0B 05 45 02 02 E3 0B 04 00 59 
+got Ack for command: getPower
+received:
+&lt;Buffer fe 0c 05 85 02 02 e3 0b 03 00 00 99 fe 0c 05 85 02 02 e3 0b 04 00 00 9e&gt;
+parse rx message: FE 0C 05 85 02 02 E3 0B 03 00 00 99 
+got Response for command: getPower
+{ status: 0, power: 0 }
+light power updated: {"id":"Light1","power":"off"}
+parse rx message: FE 0C 05 85 02 02 E3 0B 04 00 00 9E 
+got Response for command: getPower
+{ status: 0, power: 0 }
+light power updated: {"id":"Light1","power":"off"}
+</pre>
+如上文，搜索到了一个设备，其id（程序自动生成）是"Light1"，uid（唯一标识）是"0D83DD01004B1200"（实际是设备的Zigbee MAC地址）。  
+接下来关闭网络，以防无关设备加入：
+> network.switchNetwork {"duration":"off"}
+<pre>
+onUserCommand network.switchNetwork: {"duration":"off"}
+on command: switchNetwork
+sent: FE 0B 02 01 02 00 00 00 05 00 F1 
+received:
+&lt;Buffer fe 0b 02 41 02 00 00 00 05 00 b1&gt;
+parse rx message: FE 0B 02 41 02 00 00 00 05 00 B1 
+got Ack for command: switchNetwork
+{ status: 0 }
+</pre>
+
+5. 控制设备
+> light.power {"id":"Light1","operation":"on"}
+<pre>
+onUserCommand light.power: {"id":"Light1","operation":"on"}
+on command: power
+sent: FE 0B 05 01 02 02 E3 0B 06 01 1E 
+received:
+&lt;Buffer fe 0b 05 41 02 02 e3 0b 06 00 5f&gt;
+parse rx message: FE 0B 05 41 02 02 E3 0B 06 00 5F 
+got Ack for command: power
+</pre>
+
+> light.lum {"id":"Light1","lum":50,"duration":2}
+<pre>
+onUserCommand light.lum: {"id":"Light1","lum":50,"duration":2}
+on command: lum
+sent: FE 0E 05 02 02 02 E3 0B 07 04 32 02 00 2C 
+received:
+&lt;Buffer fe 0b 05 42 02 02 e3 0b 07 00 5d&gt;
+parse rx message: FE 0B 05 42 02 02 E3 0B 07 00 5D 
+got Ack for command: lum
+</pre>
+
+>light.hueSaturation {"id":"Light1","hue":0,"saturation":254,"duration":2}
+<pre>
+onUserCommand light.hueSaturation: {"id":"Light1","hue":0,"saturation":254,"duration":2}
+on command: hueSaturation
+sent: FE 0F 05 03 02 02 E3 0B 08 07 00 FE 02 00 EC 
+received:
+&lt;Buffer fe 0b 05 43 02 02 e3 0b 08 00 53&gt;
+parse rx message: FE 0B 05 43 02 02 E3 0B 08 00 53 
+got Ack for command: hueSaturation
+</pre>
+
+6. 使用Ctrl+C结束程序，查看OpenIoT/gw/data目录，会发现设备信息已经被写入到文件：
+>$ cat data/devices.json  
+>[{"id":"Light1","uid":"0D83DD01004B1200"}]
+
+再次打开程序，将自动加载设备信息并刷新其开关状态：
+>$ src/main.js
+<pre>
+This is a smart lighting gateway based on AWS IoT, which communicates to Zigbee Home Automation network via USB dongle.
+serial port opened!
+on command: networkParam
+sent: FE 0C 01 04 02 00 00 00 01 00 03 F7 
+on command: getNwkAddrByMac
+sent: FE 14 02 05 03 00 00 00 02 0D 83 DD 01 00 4B 12 00 00 00 E7 
+received:
+&lt;Buffer fe 15 01 44 02 00 00 00 01 00 03 00 86 13 96 02 00 4b 12 00 f6 fe 0b 02 45 03 00 00 00 02 00 b3&gt;
+parse rx message: FE 15 01 44 02 00 00 00 01 00 03 00 86 13 96 02 00 4B 12 00 F6 
+got Ack for command: networkParam
+{ operation: 0,
+  configuration: 3,
+  status: 0,
+  value: &lt;Buffer 86 13 96 02 00 4b 12 00&gt; }
+epid updated: 86139602004B1200
+parse rx message: FE 0B 02 45 03 00 00 00 02 00 B3 
+got Ack for command: getNwkAddrByMac
+received:
+&lt;Buffer fe 13 02 85 02 22 88 00 0c 00 0d 83 dd 01 00 4b 12 00 c5&gt;
+parse rx message: FE 13 02 85 02 22 88 00 0C 00 0D 83 DD 01 00 4B 12 00 C5 
+got Response for command: getNwkAddrByMac
+{ status: 0, macAddr: &lt;Buffer 0d 83 dd 01 00 4b 12 00&gt; }
+got nwkAddr: 8822 of Light1
+on command: getPower
+sent: FE 0C 05 05 02 22 88 0B 03 00 00 52 
+received:
+&lt;Buffer fe 0b 05 45 02 22 88 0b 03 00 15&gt;
+parse rx message: FE 0B 05 45 02 22 88 0B 03 00 15 
+got Ack for command: getPower
+received:
+&lt;Buffer fe 0c 05 85 02 22 88 0b 03 00 01 d3&gt;
+parse rx message: FE 0C 05 85 02 22 88 0B 03 00 01 D3 
+got Response for command: getPower
+{ status: 0, power: 1 }
+light power updated: {"id":"Light1","power":"on"}
+</pre>
+
+7. 从网络中删除设备并使其恢复出厂设置：
+> network.detachDevice {"macAddr":"0D83DD01004B1200"}
+<pre>
+onUserCommand network.detachDevice: {"macAddr":"0D83DD01004B1200"}
+on command: detachDevice
+sent: FE 12 02 16 02 00 00 00 09 0D 83 DD 01 00 4B 12 00 F8 
+received:
+&lt;Buffer fe 0b 02 56 02 00 00 00 09 00 aa&gt;
+parse rx message: FE 0B 02 56 02 00 00 00 09 00 AA 
+got Ack for command: detachDevice
+received:
+&lt;Buffer fe 13 02 95 02 02 e3 00 fe 00 0d 83 dd 01 00 4b 12 00 6c&gt;
+parse rx message: FE 13 02 95 02 02 E3 00 FE 00 0D 83 DD 01 00 4B 12 00 6C 
+got Response for command: detached
+{ status: 0, macAddr: &lt;Buffer 0d 83 dd 01 00 4b 12 00&gt; }
+device detached: {"id":"Light1","uid":"0D83DD01004B1200"}
+</pre>

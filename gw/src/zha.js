@@ -41,6 +41,14 @@ function ZHAHost(port) {
         if(messageData.status == constants.commandStatus.ok)
             this.updateLightNwkAddr(message.dataObject.macAddr, message.nwkAddr);
     });
+    this.on("detachedResponse", function(message) {
+        var light = this.getLight('nwkAddr', message.nwkAddr);
+        if(light) {
+            var lightIndex = this.lights.indexOf(light);
+            this.lights.splice(lightIndex, 1);
+            this.emit("deviceDetached", light);
+        }
+    })
     this.on("powerAck", function(message) {
         var nwkAddr = message.nwkAddr;
         this.onCommand(commands.light.getPower, {'nwkAddr': nwkAddr});
@@ -64,9 +72,12 @@ ZHAHost.prototype.__proto__ = events.EventEmitter.prototype;
 
 function ZHALight(_id, _uid) {
 	this.id = _id;
-	this.uid = _uid;
-	var macAddrBuffer = dataUtils.hexDecode(this.uid);
-	this.macAddr = new Buffer(macAddrBuffer);
+    if(_uid) {
+        this.uid = _uid;
+        //var macAddrBuffer = dataUtils.hexDecode(this.uid);
+        //this.macAddr = new Buffer(macAddrBuffer);
+        this.macAddr = new Buffer(this.uid, "hex");
+    }
 	this.nwkAddr = 0;
 	this.power = 'unknown';
 	this.isOn = function() {
@@ -93,22 +104,13 @@ commands.network.getNwkAddrByMac.buildMessage = function(host, message, param) {
     return true;
 };
 
-commands.light.power.buildMessage = function(host, message, param) {
-    var light = host.getLight('id', param.id);
-    if(light)
-        message.nwkAddr = light.nwkAddr;
-    else if(param.id == 'all')
-        message.nwkAddr = constants.nwkAddrAll;
-    else
-        return false;
-    message.endpoint = constants.lightingEndpoint;
-};
-
-commands.light.getPower.buildMessage = function(host, message, param) {
+ZHAHost.prototype.buildLightMessage = function(message, param) {
     if(param.id) {
-        var light = host.getLight('id', param.id);
+        var light = this.getLight('id', param.id);
         if(light)
             message.nwkAddr = light.nwkAddr;
+        else if(param.id == 'all')
+            message.nwkAddr = constants.nwkAddrAll;
         else
             return false;
     }
@@ -121,14 +123,15 @@ commands.light.getPower.buildMessage = function(host, message, param) {
 };
 
 ZHAHost.prototype.onCommand = function(command, param) {
-    //[ for debug only ----
-    //console.log('on command: ' + command.constructor.name);
+    var categoryKey = null;
+    //find category/command key
     var commandFound = false;
-    for(var categoryKey in commands) {
-        var category = commands[categoryKey];
+    for(var iCategoryKey in commands) {
+        var category = commands[iCategoryKey];
         for(var commandKey in category) {
             var iCommand = category[commandKey];
             if(iCommand == command) {
+                categoryKey = iCategoryKey;
                 console.log('on command: ' + commandKey);
                 commandFound = true;
                 break;
@@ -137,7 +140,6 @@ ZHAHost.prototype.onCommand = function(command, param) {
         if(commandFound)
             break;
     }
-    //---- for debug only ]
     var message = new Message(command.layer, command.id);
     if(command.buildMessage) {
         if(!command.buildMessage(this, message, param)) {
@@ -146,12 +148,22 @@ ZHAHost.prototype.onCommand = function(command, param) {
             return;
         }
     }
+    else if(categoryKey == "light")
+        this.buildLightMessage(message, param);
     if(command.data.send)
-        message.data = this.makeCommandData(command.data.send, param);
+        try {
+            message.data = this.makeCommandData(command.data.send, param);
+        }
+        catch(err) {
+            console.log("make command data failed due to error: " + err);
+            return;
+        }
     this.sendMessage(message);
 };
 
 ZHAHost.prototype.onUserCommand = function(commandPath, paramStr) {
+    if(commandPath.length == 0)
+        return;
     console.log(`onUserCommand ${commandPath}` + (paramStr ? (': ' + paramStr) : ''));
     var parts = commandPath.split(".");
     if(parts.length == 2) {
@@ -162,11 +174,17 @@ ZHAHost.prototype.onUserCommand = function(commandPath, paramStr) {
             var command = category[commandKey];
             if(command) {
                 if(paramStr) {
-                    var param = JSON.parse(paramStr);
+                    var param;
+                    try{
+                        param = JSON.parse(paramStr);
+                    }
+                    catch(err) {
+                        console.log("parse param to JSON failed: " + err);
+                    }
                     if(param)
                         this.onCommand(command, param);
                     else
-                        console.log("error: invalid param, cannot be parsed as JSON");
+                        console.log("cannot parse param to JSON");
                 }
                 else
                     this.onCommand(command);
@@ -323,7 +341,7 @@ ZHAHost.prototype.makeCommandData = function(dataStruct, param) {
         var dataValue = dataField.value;//使用预定义的固定值
         if(dataValue == null) {
             var paramValue = param[dataKey];//使用参数中提供的值
-            if(paramValue) {
+            if(paramValue != null) {
                 // console.log("paramValue: " + paramValue);
                 if((dataField.values) && (typeof paramValue == "string"))//如果预定义了可选值列表，参数值作为可选值的键
                     dataValue = dataField.values[paramValue];
@@ -337,8 +355,13 @@ ZHAHost.prototype.makeCommandData = function(dataStruct, param) {
             dataBuffer[dataOffset] = dataValue;
         else if(dataFieldLength == 2)
             dataBuffer.writeUInt16LE(dataValue, dataOffset);
-        else
+        else {
+            if(typeof dataValue == "string")
+                dataValue = new Buffer(dataValue, "hex");
+            assert(dataValue instanceof Buffer, "value for " + dataKey + " is not a buffer");
+            assert(dataValue.length >= dataFieldLength, `value length(${dataValue.length}) is too short for ${dataKey}(${dataFieldLength})`);
             dataValue.copy(dataBuffer, 0, dataOffset, dataOffset+dataFieldLength);
+        }
         dataOffset += dataFieldLength;
     }
     return dataBuffer;
@@ -346,7 +369,7 @@ ZHAHost.prototype.makeCommandData = function(dataStruct, param) {
 
 //zha application
 
-ZHAHost.prototype.init = function() {
+ZHAHost.prototype.onInit = function() {
     //this.onCommand(commands.system.getVersion);
     this.onCommand(commands.system.networkParam, {
         operation: 'read',
@@ -377,31 +400,47 @@ ZHAHost.prototype.updateNetworkParam = function(param) {
             paramValue = paramValue.toString("hex").toUpperCase();
         this.emit(paramKey + "Updated", paramValue);
     }
-    console.log("network param updated:");
-    console.log(this.networkParam);
+    // console.log("network param updated:");
+    // console.log(this.networkParam);
 }
 
 ZHAHost.prototype.getLight = function(key, value) {
-    for(var light of this.lights) {
-        if(key == 'macAddr') {
-            if(light.macAddr.equals(value))
+    if(this.lights) {
+        for(var light of this.lights) {
+            if(key == 'macAddr') {
+                if(light.macAddr.equals(value))
+                    return light;
+            }
+            else if(light[key] == value)
                 return light;
         }
-        else if(light[key] == value)
-            return light;
     }
     return null;
 };
 
 ZHAHost.prototype.updateLightNwkAddr = function(macAddr, nwkAddr) {
     var light = this.getLight('macAddr', macAddr);
-    if(light) {
-        light.nwkAddr = nwkAddr;
+    if(light)
         console.log('got nwkAddr: ' + nwkAddr.toString(16) + ' of ' + light.id);
-        this.onCommand(commands.light.getPower, {'nwkAddr': nwkAddr});
+    else {
+        var lastIndex = 0;
+        if(this.lights) {
+            if(this.lights.length > 0) {
+                var lastLight = this.lights[this.lights.length-1];
+                var lastId = lastLight.id;
+                lastIndex = parseInt(lastId.slice(5));
+            }
+        }
+        light = new ZHALight("Light" + (lastIndex+1).toString());
+        light.macAddr = macAddr;
+        light.uid = macAddr.toString("hex").toUpperCase();
+        if(this.lights == null)
+            this.lights = new Array();
+        this.lights.push(light);
+        this.emit("foundNewLight", light);
     }
-    else
-        console.log('no light device found, should create one.');
+    light.nwkAddr = nwkAddr;
+    this.onCommand(commands.light.getPower, {'nwkAddr': nwkAddr});
 };
 
 exports.host = ZHAHost;

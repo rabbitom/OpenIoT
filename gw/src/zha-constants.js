@@ -91,20 +91,25 @@ var commands =  {
                 macAddr: 8
             }
         }},
-        detach: {layer: 2, id: 21, data: {
+        detached: {layer: 2, id: 21, data: {
             response: {
                 status: 1,
                 macAddr: 8
+            }
+        }},
+        detachDevice: {layer: 2, id: 22, data: {
+            send: {
+                macAddr: {length: 8}
             }
         }}
 	},
 	ha: {
 		//getEndpointInfo: {layer: 4, id: 0x01},
-		restore: {layer: 4, id: 2, data: {
-            response: {
-                status: 1
-            }
-        }},
+		// restore: {layer: 4, id: 2, data: {
+        //     response: {
+        //         status: 1
+        //     }
+        // }},
 		blink: {layer: 4, id: 3, data: {
             send: {
                 time: {length: 1}
@@ -205,6 +210,6 @@ module.exports = {
     'lightingPower': lightingPower,
     // 'lihgtingEndpoint': lightingEndpoint,
     // 'nwkAddrAll': nwkAddrAll
-    'lihgtingEndpoint': 0x0b,
+    'lightingEndpoint': 0x0b,
     'nwkAddrAll': 0xffff
 }

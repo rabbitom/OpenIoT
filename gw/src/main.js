@@ -1,13 +1,8 @@
 #!/usr/bin/env node
 
-function dumpObject(object) {
-	console.log('an object of: ' + object.constructor.name);
-	for(key in object)
-		console.log(key + ': ' + object[key]);
-}
-
+var fs = require("fs");
 var SerialPort = require("serialport");
-var ZHA = require('./zha.js');
+var ZHA = require("./zha.js");
 var Host = ZHA.host;
 var Light = ZHA.light;
 
@@ -17,14 +12,21 @@ console.log("This is a smart lighting gateway based on AWS IoT, which communicat
 
 //load start parameters as user command
 
-var initCommandPath = false;
-var initCommandParam = null;
-var argc = process.argv.length;
-if(argc > 2) {
-	initCommandPath = process.argv[2];
-	if(argc > 3)
-		initCommandParam = process.argv[3];
+// var initCommandPath = false;
+// var initCommandParam = null;
+// var argc = process.argv.length;
+// if(argc > 2) {
+// 	initCommandPath = process.argv[2];
+// 	if(argc > 3)
+// 		initCommandParam = process.argv[3];
+// }
+
+var dataPath = process.env.SNAP_DATA;
+if(dataPath == null) {
+	dataPath = "data/"
 }
+else if(dataPath.slice(-1) != "/")
+	dataPath += "/"
 
 //read user command from stdin
 
@@ -78,37 +80,85 @@ function onPortOpen(error) {
 		return;
 	}
 	console.log('serial port opened!');
-    host = new Host(hostPort);
 	hostPort.on('data', onPortReceive);
-	if(initCommandPath)
-		host.onUserCommand(initCommandPath, initCommandParam);
-	else {
-		// host.loadDevices([
-		// 	{id: 'Light1', uid: '8357FE0001881700'},
-		// 	{id: 'Light2', uid: '8B5DF90001881700'},
-		// 	{id: 'Light3', uid: '285EF90001881700'}
-		// ]);
-		host.on("versionUpdated", function(version) {
-			console.log("version updated: " + JSON.stringify(version));
-		});
-		host.on("epidUpdated", function(epidValue) {
-			console.log("epid updated: " + epidValue);
-		});
-		host.on("lightPowerUpdated", function(light) {
-			console.log("light power updated: " + JSON.stringify(light));
-		});
-		host.init();
-	}
+	initHost();
 }
 
 function onPortReceive(data) {
-	host.onReceive(data);
+	if(host)
+		host.onReceive(data);
 }
 
 //host application
 
+function initHost() {
+    host = new Host(hostPort);
+	// if(initCommandPath)
+	// 	host.onUserCommand(initCommandPath, initCommandParam);
+	// else {
+	// }
+	host.on("versionUpdated", function(version) {
+		console.log("version updated: " + JSON.stringify(version));
+	});
+	host.on("epidUpdated", function(epidValue) {
+		console.log("epid updated: " + epidValue);
+	});
+	host.on("lightPowerUpdated", function(light) {
+		console.log("light power updated: " + JSON.stringify({
+			"id": light.id,
+			"power": light.power
+		}));
+	});
+	host.on("foundNewLight", function(light) {
+		console.log("found new light: " + JSON.stringify({
+			"id": light.id,
+			"uid": light.uid
+		}));
+		saveDevices();
+	});
+	host.on("deviceDetached", function(light) {
+		console.log("device detached: " + JSON.stringify({
+			"id": light.id,
+			"uid": light.uid
+		}));
+		saveDevices();
+	});
+	host.onInit();
+	// host.loadDevices([
+	// 	{id: 'Light1', uid: '8357FE0001881700'},
+	// 	{id: 'Light2', uid: '8B5DF90001881700'},
+	// 	{id: 'Light3', uid: '285EF90001881700'}
+	// ]);
+	fs.readFile(dataPath+"devices.json", {encoding: "utf8", flag: "r"}, function(err, data) {
+		if(err)
+			console.log("failed to open devices file due to error: " + err);
+		else {
+			var devices = JSON.parse(data);
+			host.loadDevices(devices);
+		}
+	});
+}
+
+function saveDevices() {
+	if(host.lights == null)
+		return;
+	var devices = new Array();
+	for(var light of host.lights) {
+		var device = new Object();
+		device.id = light.id;
+		device.uid = light.uid;
+		devices.push(device);
+	}
+	fs.writeFile(dataPath+"devices.json", JSON.stringify(devices), {encoding:"utf8",flag:"w"}, function(err) {
+		if(err)
+			console.log("failed to write devices file due to error: " + err);
+	})
+}
+
 function reportState() {
     var curState = new Object();
+	if(host.lights == null)
+		return;
     for(var light of host.lights) {
         curState[light.id] = {
             power: light.power
