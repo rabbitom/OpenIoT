@@ -341,12 +341,12 @@ lighting-gw网关程序中已经实现了以上各条命令，如果您的程序
 >$ node -v  
 >v6.5.0
 
-2. 下载OpenIoT工程：
+1. 下载OpenIoT工程：
 >$ git clone https://git.oschina.net/erabbit/OpenIoT.git OpenIoT  
 >$ cd OpenIoT/gw  
 >$ mkdir data
 
-3. 运行主程序（由于要使用串口，此处可能需要sudo权限）：
+1. 运行主程序（由于要使用串口，此处可能需要sudo权限）：
 >$ src/main.js
 ><pre>
 >This is a smart lighting gateway based on AWS IoT, which communicates to Zigbee Home Automation network via USB dongle.
@@ -364,10 +364,10 @@ lighting-gw网关程序中已经实现了以上各条命令，如果您的程序
 >  value: &lt;Buffer 86 13 96 02 00 4b 12 00&gt; }
 ><strong>epid updated: 86139602004B1200</strong>
 ></pre>
-  
-  如上文，可将epid用作dongle的唯一标识。
 
-4. 打开网络，以搜索设备：
+    如上文，可将epid用作dongle的唯一标识。
+
+1. 打开网络，以搜索设备：
 > network.switchNetwork {"duration":"on"}
 ><pre>
 >onUserCommand network.switchNetwork: {"duration":"on"}
@@ -415,8 +415,8 @@ lighting-gw网关程序中已经实现了以上各条命令，如果您的程序
 >light power updated: {"id":"Light1","power":"off"}
 ></pre>
 
-  如上文，搜索到了一个设备，其id（程序自动生成）是"Light1"，uid（唯一标识）是"0D83DD01004B1200"（实际是设备的Zigbee MAC地址）。  
-  接下来关闭网络，以防无关设备加入：
+    如上文，搜索到了一个设备，其id（程序自动生成）是"Light1"，uid（唯一标识）是"0D83DD01004B1200"（实际是设备的Zigbee MAC地址）。  
+    接下来关闭网络，以防无关设备加入：
 > network.switchNetwork {"duration":"off"}
 ><pre>
 >onUserCommand network.switchNetwork: {"duration":"off"}
@@ -429,7 +429,7 @@ lighting-gw网关程序中已经实现了以上各条命令，如果您的程序
 >{ status: 0 }
 ></pre>
 
-5. 控制设备
+1. 控制设备
 > light.power {"id":"Light1","operation":"on"}
 ><pre>
 >onUserCommand light.power: {"id":"Light1","operation":"on"}
@@ -463,11 +463,11 @@ lighting-gw网关程序中已经实现了以上各条命令，如果您的程序
 >got Ack for command: hueSaturation
 ></pre>
 
-6. 使用Ctrl+C结束程序，查看OpenIoT/gw/data目录，会发现设备信息已经被写入到文件：
+1. 使用Ctrl+C结束程序，查看OpenIoT/gw/data目录，会发现设备信息已经被写入到文件：
 >$ cat data/devices.json  
 >[{"id":"Light1","uid":"0D83DD01004B1200"}]
 
-  再次打开程序，将自动加载设备信息并刷新其开关状态：
+    再次打开程序，将自动加载设备信息并刷新其开关状态：
 >$ src/main.js
 <pre>
 This is a smart lighting gateway based on AWS IoT, which communicates to Zigbee Home Automation network via USB dongle.
@@ -507,7 +507,7 @@ got Response for command: getPower
 light power updated: {"id":"Light1","power":"on"}
 </pre>
 
-7. 从网络中删除设备并使其恢复出厂设置：
+1. 从网络中删除设备并使其恢复出厂设置：
 > network.detachDevice {"macAddr":"0D83DD01004B1200"}
 <pre>
 onUserCommand network.detachDevice: {"macAddr":"0D83DD01004B1200"}
