@@ -348,124 +348,126 @@ lighting-gw网关程序中已经实现了以上各条命令，如果您的程序
 
 3. 运行主程序（由于要使用串口，此处可能需要sudo权限）：
 >$ src/main.js
-<pre>
-This is a smart lighting gateway based on AWS IoT, which communicates to Zigbee Home Automation network via USB dongle.
-serial port opened!
-on command: networkParam
-sent: FE 0C 01 04 02 00 00 00 01 00 03 F7 
-failed to open devices file due to error: Error: ENOENT: no such file or directory, open 'data/devices.json'
-received:
-&lt;Buffer fe 15 01 44 02 00 00 00 01 00 03 00 86 13 96 02 00 4b 12 00 f6&gt;
-parse rx message: FE 15 01 44 02 00 00 00 01 00 03 00 86 13 96 02 00 4B 12 00 F6 
-got Ack for command: networkParam
-{ operation: 0,
-  configuration: 3,
-  status: 0,
-  value: &lt;Buffer 86 13 96 02 00 4b 12 00&gt; }
-<strong>epid updated: 86139602004B1200</strong>
-</pre>
-如上文，可将epid用作dongle的唯一标识。
+><pre>
+>This is a smart lighting gateway based on AWS IoT, which communicates to Zigbee Home Automation network via USB dongle.
+>serial port opened!
+>on command: networkParam
+>sent: FE 0C 01 04 02 00 00 00 01 00 03 F7 
+>failed to open devices file due to error: Error: ENOENT: no such file or directory, open 'data/devices.json'
+>received:
+>&lt;Buffer fe 15 01 44 02 00 00 00 01 00 03 00 86 13 96 02 00 4b 12 00 f6&gt;
+>parse rx message: FE 15 01 44 02 00 00 00 01 00 03 00 86 13 96 02 00 4B 12 00 F6 
+>got Ack for command: networkParam
+>{ operation: 0,
+>  configuration: 3,
+>  status: 0,
+>  value: &lt;Buffer 86 13 96 02 00 4b 12 00&gt; }
+><strong>epid updated: 86139602004B1200</strong>
+></pre>
+  
+  如上文，可将epid用作dongle的唯一标识。
 
 4. 打开网络，以搜索设备：
 > network.switchNetwork {"duration":"on"}
-<pre>
-onUserCommand network.switchNetwork: {"duration":"on"}
-on command: switchNetwork
-sent: FE 0B 02 01 02 00 00 00 02 FF 09 
-received:
-&lt;Buffer fe 0b 02 41 02 00 00 00 02 00 b6&gt;
-parse rx message: FE 0B 02 41 02 00 00 00 02 00 B6 
-got Ack for command: switchNetwork
-{ status: 0 }
+><pre>
+>onUserCommand network.switchNetwork: {"duration":"on"}
+>on command: switchNetwork
+>sent: FE 0B 02 01 02 00 00 00 02 FF 09 
+>received:
+>&lt;Buffer fe 0b 02 41 02 00 00 00 02 00 b6&gt;
+>parse rx message: FE 0B 02 41 02 00 00 00 02 00 B6 
+>got Ack for command: switchNetwork
+>{ status: 0 }
+>
+>received:
+>&lt;Buffer fe 15 02 82 02 02 e3 00 00 02 e3 0d 83 dd 01 00 4b 12 00 01 63 fe 15 02 82 02 02 e3 00 01 02 e3 0d 83 dd 01 00 4b 12 00 01 62&gt;
+>parse rx message: FE 15 02 82 02 02 E3 00 00 02 E3 0D 83 DD 01 00 4B 12 00 01 63 
+>got Response for command: updateAddress
+>{ nwkAddr: 58114,
+>  macAddr: &lt;Buffer 0d 83 dd 01 00 4b 12 00&gt;,
+>  deviceType: 1 }
+><strong>found new light: {"id":"Light1","uid":"0D83DD01004B1200"}</strong>
+>on command: getPower
+>sent: FE 0C 05 05 02 02 E3 0B 03 00 00 19 
+>parse rx message: FE 15 02 82 02 02 E3 00 01 02 E3 0D 83 DD 01 00 4B 12 00 01 62 
+>got Response for command: updateAddress
+>{ nwkAddr: 58114,
+>  macAddr: &lt;Buffer 0d 83 dd 01 00 4b 12 00&gt;,
+>  deviceType: 1 }
+>got nwkAddr: e302 of Light1
+>on command: getPower
+>sent: FE 0C 05 05 02 02 E3 0B 04 00 00 1E 
+>received:
+>&lt;Buffer fe 0b 05 45 02 02 e3 0b 03 00 5e fe 0b 05 45 02 02 e3 0b 04 00 59&gt;
+>parse rx message: FE 0B 05 45 02 02 E3 0B 03 00 5E 
+>got Ack for command: getPower
+>parse rx message: FE 0B 05 45 02 02 E3 0B 04 00 59 
+>got Ack for command: getPower
+>received:
+>&lt;Buffer fe 0c 05 85 02 02 e3 0b 03 00 00 99 fe 0c 05 85 02 02 e3 0b 04 00 00 9e&gt;
+>parse rx message: FE 0C 05 85 02 02 E3 0B 03 00 00 99 
+>got Response for command: getPower
+>{ status: 0, power: 0 }
+>light power updated: {"id":"Light1","power":"off"}
+>parse rx message: FE 0C 05 85 02 02 E3 0B 04 00 00 9E 
+>got Response for command: getPower
+>{ status: 0, power: 0 }
+>light power updated: {"id":"Light1","power":"off"}
+></pre>
 
-received:
-&lt;Buffer fe 15 02 82 02 02 e3 00 00 02 e3 0d 83 dd 01 00 4b 12 00 01 63 fe 15 02 82 02 02 e3 00 01 02 e3 0d 83 dd 01 00 4b 12 00 01 62&gt;
-parse rx message: FE 15 02 82 02 02 E3 00 00 02 E3 0D 83 DD 01 00 4B 12 00 01 63 
-got Response for command: updateAddress
-{ nwkAddr: 58114,
-  macAddr: &lt;Buffer 0d 83 dd 01 00 4b 12 00&gt;,
-  deviceType: 1 }
-<strong>found new light: {"id":"Light1","uid":"0D83DD01004B1200"}</strong>
-on command: getPower
-sent: FE 0C 05 05 02 02 E3 0B 03 00 00 19 
-parse rx message: FE 15 02 82 02 02 E3 00 01 02 E3 0D 83 DD 01 00 4B 12 00 01 62 
-got Response for command: updateAddress
-{ nwkAddr: 58114,
-  macAddr: &lt;Buffer 0d 83 dd 01 00 4b 12 00&gt;,
-  deviceType: 1 }
-got nwkAddr: e302 of Light1
-on command: getPower
-sent: FE 0C 05 05 02 02 E3 0B 04 00 00 1E 
-received:
-&lt;Buffer fe 0b 05 45 02 02 e3 0b 03 00 5e fe 0b 05 45 02 02 e3 0b 04 00 59&gt;
-parse rx message: FE 0B 05 45 02 02 E3 0B 03 00 5E 
-got Ack for command: getPower
-parse rx message: FE 0B 05 45 02 02 E3 0B 04 00 59 
-got Ack for command: getPower
-received:
-&lt;Buffer fe 0c 05 85 02 02 e3 0b 03 00 00 99 fe 0c 05 85 02 02 e3 0b 04 00 00 9e&gt;
-parse rx message: FE 0C 05 85 02 02 E3 0B 03 00 00 99 
-got Response for command: getPower
-{ status: 0, power: 0 }
-light power updated: {"id":"Light1","power":"off"}
-parse rx message: FE 0C 05 85 02 02 E3 0B 04 00 00 9E 
-got Response for command: getPower
-{ status: 0, power: 0 }
-light power updated: {"id":"Light1","power":"off"}
-</pre>
-如上文，搜索到了一个设备，其id（程序自动生成）是"Light1"，uid（唯一标识）是"0D83DD01004B1200"（实际是设备的Zigbee MAC地址）。  
-接下来关闭网络，以防无关设备加入：
+  如上文，搜索到了一个设备，其id（程序自动生成）是"Light1"，uid（唯一标识）是"0D83DD01004B1200"（实际是设备的Zigbee MAC地址）。  
+  接下来关闭网络，以防无关设备加入：
 > network.switchNetwork {"duration":"off"}
-<pre>
-onUserCommand network.switchNetwork: {"duration":"off"}
-on command: switchNetwork
-sent: FE 0B 02 01 02 00 00 00 05 00 F1 
-received:
-&lt;Buffer fe 0b 02 41 02 00 00 00 05 00 b1&gt;
-parse rx message: FE 0B 02 41 02 00 00 00 05 00 B1 
-got Ack for command: switchNetwork
-{ status: 0 }
-</pre>
+><pre>
+>onUserCommand network.switchNetwork: {"duration":"off"}
+>on command: switchNetwork
+>sent: FE 0B 02 01 02 00 00 00 05 00 F1 
+>received:
+>&lt;Buffer fe 0b 02 41 02 00 00 00 05 00 b1&gt;
+>parse rx message: FE 0B 02 41 02 00 00 00 05 00 B1 
+>got Ack for command: switchNetwork
+>{ status: 0 }
+></pre>
 
 5. 控制设备
 > light.power {"id":"Light1","operation":"on"}
-<pre>
-onUserCommand light.power: {"id":"Light1","operation":"on"}
-on command: power
-sent: FE 0B 05 01 02 02 E3 0B 06 01 1E 
-received:
-&lt;Buffer fe 0b 05 41 02 02 e3 0b 06 00 5f&gt;
-parse rx message: FE 0B 05 41 02 02 E3 0B 06 00 5F 
-got Ack for command: power
-</pre>
-
+><pre>
+>onUserCommand light.power: {"id":"Light1","operation":"on"}
+>on command: power
+>sent: FE 0B 05 01 02 02 E3 0B 06 01 1E 
+>received:
+>&lt;Buffer fe 0b 05 41 02 02 e3 0b 06 00 5f&gt;
+>parse rx message: FE 0B 05 41 02 02 E3 0B 06 00 5F 
+>got Ack for command: power
+></pre>
+>
 > light.lum {"id":"Light1","lum":50,"duration":2}
-<pre>
-onUserCommand light.lum: {"id":"Light1","lum":50,"duration":2}
-on command: lum
-sent: FE 0E 05 02 02 02 E3 0B 07 04 32 02 00 2C 
-received:
-&lt;Buffer fe 0b 05 42 02 02 e3 0b 07 00 5d&gt;
-parse rx message: FE 0B 05 42 02 02 E3 0B 07 00 5D 
-got Ack for command: lum
-</pre>
-
+><pre>
+>onUserCommand light.lum: {"id":"Light1","lum":50,"duration":2}
+>on command: lum
+>sent: FE 0E 05 02 02 02 E3 0B 07 04 32 02 00 2C 
+>received:
+>&lt;Buffer fe 0b 05 42 02 02 e3 0b 07 00 5d&gt;
+>parse rx message: FE 0B 05 42 02 02 E3 0B 07 00 5D 
+>got Ack for command: lum
+></pre>
+>
 >light.hueSaturation {"id":"Light1","hue":0,"saturation":254,"duration":2}
-<pre>
-onUserCommand light.hueSaturation: {"id":"Light1","hue":0,"saturation":254,"duration":2}
-on command: hueSaturation
-sent: FE 0F 05 03 02 02 E3 0B 08 07 00 FE 02 00 EC 
-received:
-&lt;Buffer fe 0b 05 43 02 02 e3 0b 08 00 53&gt;
-parse rx message: FE 0B 05 43 02 02 E3 0B 08 00 53 
-got Ack for command: hueSaturation
-</pre>
+><pre>
+>onUserCommand light.hueSaturation: {"id":"Light1","hue":0,"saturation":254,"duration":2}
+>on command: hueSaturation
+>sent: FE 0F 05 03 02 02 E3 0B 08 07 00 FE 02 00 EC 
+>received:
+>&lt;Buffer fe 0b 05 43 02 02 e3 0b 08 00 53&gt;
+>parse rx message: FE 0B 05 43 02 02 E3 0B 08 00 53 
+>got Ack for command: hueSaturation
+></pre>
 
-6. 使用Ctrl+C结束程序，查看OpenIoT/gw/data目录，会发现设备信息已经被写入到文件：
+6. 使用Ctrl+C结束程序，查看OpenIoT/gw/data目录，会发现设备信息已经被写入到文件：
 >$ cat data/devices.json  
 >[{"id":"Light1","uid":"0D83DD01004B1200"}]
 
-再次打开程序，将自动加载设备信息并刷新其开关状态：
+  再次打开程序，将自动加载设备信息并刷新其开关状态：
 >$ src/main.js
 <pre>
 This is a smart lighting gateway based on AWS IoT, which communicates to Zigbee Home Automation network via USB dongle.
