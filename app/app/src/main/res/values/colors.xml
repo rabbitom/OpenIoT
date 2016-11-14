@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="colorPrimary">#3F51B5</color>
+    <color name="colorPrimaryDark">#303F9F</color>
+    <color name="colorAccent">#FF4081</color>
+    <color name="bg_light">#2cbfb3</color>
+    <color name="tab_text_normal">#99ffffff</color>
+    <color name="tab_text_hilight">#ffffff</color>
+    <color name="radio_text_color">#A6F1F1</color>
+    <color name="radio_text_bg">#ffffff</color>
+    <color name="circle_stroke">#B2FFFFFF</color>
+</resources>

@@ -1,0 +1,105 @@
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+              xmlns:tools="http://schemas.android.com/tools"
+              xmlns:custom="http://schemas.android.com/apk/res-auto"
+              android:layout_width="match_parent"
+              android:layout_height="match_parent"
+              android:background="@color/bg_light"
+              android:gravity="center_horizontal"
+              android:orientation="vertical"
+              tools:context="net.erabbit.lightingapp.LightFragment">
+
+    <RadioGroup
+        android:layout_width="270dp"
+        android:layout_height="wrap_content"
+        android:background="@drawable/round_rect_frame"
+        android:padding="2dp"
+        android:orientation="horizontal"
+        android:id="@+id/lightModeSelector">
+        <RadioButton style="@style/round_rect_radio"
+            android:id="@+id/lightModeCold"
+            android:text="@string/light_cold"/>
+        <RadioButton style="@style/round_rect_radio"
+            android:id="@+id/lightModeWarm"
+            android:checked="true"
+            android:text="@string/light_warm"/>
+    </RadioGroup>
+
+    <View
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1" />
+
+    <FrameLayout
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content">
+        <FrameLayout
+            android:id="@+id/colorCirclesView"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content">
+            <net.erabbit.common_lib.CircleView
+                android:layout_width="270dp"
+                android:layout_height="270dp"
+                custom:diameter="270dp"
+                custom:stroke_width="30dp"
+                custom:stroke_color="@color/circle_stroke"/>
+            <net.erabbit.common_lib.BalloonCircleView
+                android:layout_width="158dp"
+                android:layout_height="158dp"
+                android:layout_margin="56dp"
+                custom:diameter="146dp"
+                custom:stroke_width="6dp"
+                custom:stroke_color="@color/circle_stroke"
+                custom:balloon_height="6dp"/>
+            <ViewFlipper
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:id="@+id/colorViews">
+                <net.erabbit.common_lib.ColorPlateCircleView
+                    android:layout_width="260dp"
+                    android:layout_height="260dp"
+                    android:layout_margin="5dp"
+                    custom:diameter="260dp"
+                    custom:stroke_width="51dp"
+                    android:id="@+id/colorPlateView"/>
+                <net.erabbit.common_lib.ColorFlowCircleView
+                    android:layout_width="260dp"
+                    android:layout_height="260dp"
+                    android:layout_margin="5dp"
+                    custom:diameter="260dp"
+                    custom:stroke_width="51dp"
+                    android:id="@+id/colorFlowView"/>
+            </ViewFlipper>
+        </FrameLayout>
+        <CheckBox
+            android:id="@+id/lightSwitch"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center"
+            android:button="@null"
+            android:checked="true"
+            android:background="@drawable/switch_button"
+            android:visibility="visible"/>
+    </FrameLayout>
+
+    <View
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1" />
+
+    <LinearLayout
+        android:id="@+id/colorFlowCheckView"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:padding="2dp"
+        android:background="@drawable/round_rect_frame">
+        <CheckBox style="@style/round_rect_radio"
+                  android:text="@string/color_flow"
+                  android:id="@+id/colorFlowCheck"/>
+    </LinearLayout>
+
+    <View
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1" />
+
+</LinearLayout>
