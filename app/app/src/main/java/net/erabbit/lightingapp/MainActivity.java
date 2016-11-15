@@ -1,7 +1,9 @@
 package net.erabbit.lightingapp;
 
+import android.app.AlertDialog;
 import android.app.FragmentManager;
 import android.app.FragmentTransaction;
+import android.content.DialogInterface;
 import android.graphics.Color;
 import android.graphics.drawable.Drawable;
 import android.os.Bundle;
@@ -10,13 +12,15 @@ import android.os.Message;
 import android.util.Log;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.EditText;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 import android.widget.ViewFlipper;
 
 import java.util.ArrayList;
 
-public class MainActivity extends BaseActivity implements LightFragment.OnLightFragmentInteracionListener {
+public class MainActivity extends BaseActivity
+        implements LightFragment.OnLightFragmentInteracionListener, View.OnClickListener {
 
     protected class TabItem implements View.OnClickListener {
         public final String name;
@@ -99,6 +103,8 @@ public class MainActivity extends BaseActivity implements LightFragment.OnLightF
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
+        actionBarRightIcon.setOnClickListener(this);
+
         deviceControlView = findViewById(R.id.activity_main);
         views = (ViewFlipper)findViewById(R.id.views);
 
@@ -176,4 +182,23 @@ public class MainActivity extends BaseActivity implements LightFragment.OnLightF
     }
 
     LightApiHandler apiHandler = new LightApiHandler();
+
+    @Override
+    public void onClick(View view) {
+        if(view == actionBarRightIcon) {
+            final EditText editText = new EditText(this);
+            editText.setText(Light.getServerIp());
+            new AlertDialog.Builder(this)
+                    .setTitle(R.string.set_ip)
+                    .setView(editText)
+                    .setPositiveButton(R.string.ok, new DialogInterface.OnClickListener() {
+                        @Override
+                        public void onClick(DialogInterface dialogInterface, int i) {
+                            Light.setServerIp(editText.getText().toString());
+                        }
+                    })
+                    .setNegativeButton(R.string.cancel, null)
+                    .show();
+        }
+    }
 }

@@ -3,4 +3,7 @@
     <string name="light_cold">Cold</string>
     <string name="light_warm">Warm</string>
     <string name="color_flow">Color Flow</string>
+    <string name="set_ip">Set IP Address:</string>
+    <string name="ok">OK</string>
+    <string name="cancel">Cancel</string>
 </resources>

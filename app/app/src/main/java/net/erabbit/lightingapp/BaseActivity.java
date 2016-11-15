@@ -31,12 +31,10 @@ public class BaseActivity extends Activity {
             actionBarView = actionBar.getCustomView();
             actionBarTitle = (TextView)actionBarView.findViewById(R.id.title);
             //actionBarTitle.setText(getTitle());
-/*
             actionBarLeftIcon = (ImageView)actionBarView.findViewById(R.id.leftIcon);
             actionBarLeftIcon.setImageResource(R.drawable.menu);
             actionBarRightIcon = (ImageView)actionBarView.findViewById(R.id.rightIcon);
             actionBarRightIcon.setImageResource(R.drawable.settings);
-*/
         }
     }
 

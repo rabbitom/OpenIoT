@@ -38,7 +38,20 @@ public class Light {
         return lights;
     }
 
-    static final String baseUrl = "http://192.168.199.14:9000/api";
+    //static String baseUrl = "http://192.168.199.14:9000/api";
+    static String serverIp = "192.168.199.14";
+
+    static String getUrl(String suffix) {
+        return "http://" + serverIp + ":9000/api" + suffix;
+    }
+
+    public static void setServerIp(String ip) {
+        serverIp = ip;
+    }
+
+    public static String getServerIp() {
+        return serverIp;
+    }
 
     public static final int MSG_GET_LIGHTS = 101;
     public static final int MSG_LIGHT_POWER = 102;
@@ -48,13 +61,13 @@ public class Light {
     public static final int LIGHT_POWER_OFF = 0;
 
     public static void setLightPower(String lightId, int power, Handler handler) {
-        String url = baseUrl + "/light/" + lightId + "/" + power;
+        String url = getUrl("/light/" + lightId + "/" + power);
         HttpRequestThread thread = new HttpRequestThread(url, handler, MSG_LIGHT_POWER);
         thread.start();
     }
 
     public static void setLightColor(String lightId, int color, Handler handler) {
-        String url = baseUrl + "/colors/" + lightId;
+        String url = getUrl("/colors/" + lightId);
         HttpRequestThread thread = new HttpRequestThread(url, handler, MSG_LIGHT_COLOR);
         float hsv[] = new float[3];
         Color.colorToHSV(color, hsv);
