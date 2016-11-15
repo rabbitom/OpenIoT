@@ -1,6 +1,9 @@
 package net.erabbit.lightingapp;
 
 import android.graphics.Color;
+import android.os.Handler;
+
+import net.erabbit.common_lib.HttpRequestThread;
 
 import java.util.ArrayList;
 
@@ -35,4 +38,29 @@ public class Light {
         return lights;
     }
 
+    static final String baseUrl = "http://192.168.199.14:9000/api";
+
+    public static final int MSG_GET_LIGHTS = 101;
+    public static final int MSG_LIGHT_POWER = 102;
+    public static final int MSG_LIGHT_COLOR = 103;
+
+    public static final int LIGHT_POWER_ON = 1;
+    public static final int LIGHT_POWER_OFF = 0;
+
+    public static void setLightPower(String lightId, int power, Handler handler) {
+        String url = baseUrl + "/light/" + lightId + "/" + power;
+        HttpRequestThread thread = new HttpRequestThread(url, handler, MSG_LIGHT_POWER);
+        thread.start();
+    }
+
+    public static void setLightColor(String lightId, int color, Handler handler) {
+        String url = baseUrl + "/colors/" + lightId;
+        HttpRequestThread thread = new HttpRequestThread(url, handler, MSG_LIGHT_COLOR);
+        float hsv[] = new float[3];
+        Color.colorToHSV(color, hsv);
+        thread.addParam("hue", (int)(hsv[0] / 360 * 254));
+        thread.addParam("saturation", (int)(hsv[1] * 254));
+        thread.addParam("brightness", (int)(hsv[2] * 255));
+        thread.start();
+    }
 }

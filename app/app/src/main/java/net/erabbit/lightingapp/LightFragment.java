@@ -38,7 +38,8 @@ implements CheckBox.OnCheckedChangeListener, ColorPlateCircleView.OnColorPlateCh
     protected CheckBox lightSwitch;
 
     public interface OnLightFragmentInteracionListener {
-        void onLightModeChanged();
+        void onLightPowerChanged(boolean isOn);
+        void onLightColorChanged(int color);
     }
 
     protected OnLightFragmentInteracionListener mListener;
@@ -110,7 +111,6 @@ implements CheckBox.OnCheckedChangeListener, ColorPlateCircleView.OnColorPlateCh
                 colorViews.setDisplayedChild(VIEW_COLOR_FLOW);
             else
                 colorViews.setDisplayedChild(VIEW_COLOR_PLATE);
-            updateLightMode();
         }
         else if(compoundButton == lightSwitch) {
             if(checked) {
@@ -126,7 +126,8 @@ implements CheckBox.OnCheckedChangeListener, ColorPlateCircleView.OnColorPlateCh
                 lightModeSelector.setVisibility(View.INVISIBLE);
                 colorFlowView.setFlow(false);
             }
-            updateLightMode();
+            if(mListener != null)
+                mListener.onLightPowerChanged(checked);
         }
     }
 
@@ -142,15 +143,7 @@ implements CheckBox.OnCheckedChangeListener, ColorPlateCircleView.OnColorPlateCh
 
     @Override
     public void onColorPlateChanged() {
-        updateLightMode();
+        if(mListener != null)
+            mListener.onLightColorChanged(colorPlateView.getColor());
     }
-
-    protected boolean updateData = true;
-
-    protected void updateLightMode() {
-        if(updateData && (mListener != null))
-            mListener.onLightModeChanged();
-    }
-
-
 }

@@ -5,6 +5,8 @@ import android.app.FragmentTransaction;
 import android.graphics.Color;
 import android.graphics.drawable.Drawable;
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.Message;
 import android.util.Log;
 import android.view.View;
 import android.view.ViewGroup;
@@ -14,7 +16,7 @@ import android.widget.ViewFlipper;
 
 import java.util.ArrayList;
 
-public class MainActivity extends BaseActivity implements LightFragment.OnLightFragmentInteracionListener, View.OnClickListener {
+public class MainActivity extends BaseActivity implements LightFragment.OnLightFragmentInteracionListener {
 
     protected class TabItem implements View.OnClickListener {
         public final String name;
@@ -104,6 +106,7 @@ public class MainActivity extends BaseActivity implements LightFragment.OnLightF
             TabItem lightTab = new TabItem(light, R.drawable.light_normal, R.drawable.light_pressed);
             tabs.add(lightTab);
         }
+        allLightsMask = (int)Math.pow(2, tabs.size()) - 1;
         LinearLayout tabsHolder = (LinearLayout)findViewById(R.id.tabs);
         for(TabItem tab : tabs) {
             tab.createView(tabsHolder);
@@ -121,22 +124,41 @@ public class MainActivity extends BaseActivity implements LightFragment.OnLightF
         views.setDisplayedChild(0);
     }
 
+    int curLightIndex = -1;
+    int curLightsMask = 0;
+    int allLightsMask = 0;
+
     public void onTabSwitched(TabItem tab, boolean highlighted) {
         int index = tabs.indexOf(tab);
-        Log.d("ui", String.format("Light%d %s", index+1, highlighted ? "selected" : "deselected"));
+        //Log.d("ui", String.format("Light%d %s", index+1, highlighted ? "selected" : "deselected"));
+        if(highlighted)
+            curLightIndex = index;
+        int lightMask = (int)Math.pow(2,index);
+        if(highlighted)
+            curLightsMask |= lightMask;
+        else if((curLightsMask & lightMask) > 0)
+            curLightsMask -= lightMask;
+        Log.d("ui", "lights mask = " + curLightsMask);
     }
 
     @Override
-    public void onClick(View view) {
-
+    public void onLightPowerChanged(boolean isOn) {
+        String curLights = curLights();
+        if(curLights != null)
+            Light.setLightPower(curLights, isOn ? Light.LIGHT_POWER_ON : Light.LIGHT_POWER_OFF, apiHandler);
     }
 
-    @Override
-    public void onLightModeChanged() {
-//        DituoAromaDiffuser.Light light = lightFragment.getLightMode();
-//        if((aromaDiffuser.getLight() == DituoAromaDiffuser.Light.COLOR_FLOW_ON) && (light != DituoAromaDiffuser.Light.COLOR_FLOW_ON))
-//            aromaDiffuser.setLight(DituoAromaDiffuser.Light.COLOR_FLOW_OFF);
-//        aromaDiffuser.setLight(light);
+    public void onLightColorChanged(int color) {
+        String curLights = curLights();
+        if(curLights != null)
+            Light.setLightColor(curLights, color, apiHandler);
+    }
+
+    String curLights() {
+        if(curLightIndex < 0)
+            return null;
+        else
+            return (curLightsMask == allLightsMask) ? "all" : Light.getLights().get(curLightIndex);
     }
 
     protected void setBgColor(int colorId) {
@@ -145,4 +167,13 @@ public class MainActivity extends BaseActivity implements LightFragment.OnLightF
         actionBarView.setBackgroundColor(color);
     }
 
+    static class LightApiHandler extends Handler {
+        @Override
+        public void handleMessage(Message msg) {
+            super.handleMessage(msg);
+            Log.d("light_api", msg.toString());
+        }
+    }
+
+    LightApiHandler apiHandler = new LightApiHandler();
 }
