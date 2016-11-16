@@ -16,12 +16,12 @@
         android:orientation="horizontal"
         android:id="@+id/lightModeSelector">
         <RadioButton style="@style/round_rect_radio"
-            android:id="@+id/lightModeCold"
-            android:text="@string/light_cold"/>
+            android:id="@+id/lightModeNormal"
+            android:text="@string/light_normal"/>
         <RadioButton style="@style/round_rect_radio"
-            android:id="@+id/lightModeWarm"
+            android:id="@+id/lightModeAlternate"
             android:checked="true"
-            android:text="@string/light_warm"/>
+            android:text="@string/light_alternate"/>
     </RadioGroup>
 
     <View
@@ -50,10 +50,10 @@
                 custom:stroke_width="6dp"
                 custom:stroke_color="@color/circle_stroke"
                 custom:balloon_height="6dp"/>
-            <ViewFlipper
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:id="@+id/colorViews">
+            <!--<ViewFlipper-->
+                <!--android:layout_width="wrap_content"-->
+                <!--android:layout_height="wrap_content"-->
+                <!--android:id="@+id/colorViews">-->
                 <net.erabbit.common_lib.ColorPlateCircleView
                     android:layout_width="260dp"
                     android:layout_height="260dp"
@@ -61,14 +61,14 @@
                     custom:diameter="260dp"
                     custom:stroke_width="51dp"
                     android:id="@+id/colorPlateView"/>
-                <net.erabbit.common_lib.ColorFlowCircleView
-                    android:layout_width="260dp"
-                    android:layout_height="260dp"
-                    android:layout_margin="5dp"
-                    custom:diameter="260dp"
-                    custom:stroke_width="51dp"
-                    android:id="@+id/colorFlowView"/>
-            </ViewFlipper>
+                <!--<net.erabbit.common_lib.ColorFlowCircleView-->
+                    <!--android:layout_width="260dp"-->
+                    <!--android:layout_height="260dp"-->
+                    <!--android:layout_margin="5dp"-->
+                    <!--custom:diameter="260dp"-->
+                    <!--custom:stroke_width="51dp"-->
+                    <!--android:id="@+id/colorFlowView"/>-->
+            <!--</ViewFlipper>-->
         </FrameLayout>
         <CheckBox
             android:id="@+id/lightSwitch"
@@ -87,14 +87,14 @@
         android:layout_weight="1" />
 
     <LinearLayout
-        android:id="@+id/colorFlowCheckView"
+        android:id="@+id/lightModeCheckView"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:padding="2dp"
         android:background="@drawable/round_rect_frame">
         <CheckBox style="@style/round_rect_radio"
-                  android:text="@string/color_flow"
-                  android:id="@+id/colorFlowCheck"/>
+                  android:text="@string/light_check"
+                  android:id="@+id/lightModeCheck"/>
     </LinearLayout>
 
     <View

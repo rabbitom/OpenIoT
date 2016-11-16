@@ -160,6 +160,20 @@ public class MainActivity extends BaseActivity
             Light.setLightColor(curLights, color, apiHandler);
     }
 
+    @Override
+    public void onLightColorTemperatureChanged(int colorTemperature) {
+        String curLights = curLights();
+        if(curLights != null)
+            Light.setLightColor(curLights, colorTemperature, apiHandler);
+    }
+
+    @Override
+    public void onLightLuminanceChanged(int lum) {
+        String curLights = curLights();
+        if(curLights != null)
+            Light.setLightLuminance(curLights, lum, apiHandler);
+    }
+
     String curLights() {
         if(curLightIndex < 0)
             return null;

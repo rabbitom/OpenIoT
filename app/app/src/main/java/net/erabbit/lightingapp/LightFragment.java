@@ -10,9 +10,7 @@ import android.widget.CheckBox;
 import android.widget.CompoundButton;
 import android.widget.RadioButton;
 import android.widget.RadioGroup;
-import android.widget.ViewFlipper;
 
-import net.erabbit.common_lib.ColorFlowCircleView;
 import net.erabbit.common_lib.ColorPlateCircleView;
 
 import java.util.ArrayList;
@@ -24,22 +22,24 @@ import java.util.ArrayList;
 public class LightFragment extends Fragment
 implements CheckBox.OnCheckedChangeListener, ColorPlateCircleView.OnColorPlateChangedListener, RadioGroup.OnCheckedChangeListener {
 
-    protected static final int VIEW_COLOR_PLATE = 0;
-    protected static final int VIEW_COLOR_FLOW = 1;
+//    protected static final int VIEW_COLOR_PLATE = 0;
+//    protected static final int VIEW_COLOR_FLOW = 1;
     protected View colorCirclesView;
-    protected View colorFlowCheckView;
-    protected CheckBox colorFlowCheck;
+    protected View lightModeCheckView;
+    protected CheckBox lightModeCheck;
     protected RadioGroup lightModeSelector;
-    protected RadioButton lightModeCold;
-    protected RadioButton lightModeWarm;
-    protected ViewFlipper colorViews;
+    protected RadioButton lightModeNormal;
+    protected RadioButton lightModeAlternate;
+    //protected ViewFlipper colorViews;
     protected ColorPlateCircleView colorPlateView;
-    protected ColorFlowCircleView colorFlowView;
+    //protected ColorFlowCircleView colorFlowView;
     protected CheckBox lightSwitch;
 
     public interface OnLightFragmentInteracionListener {
         void onLightPowerChanged(boolean isOn);
         void onLightColorChanged(int color);
+        void onLightColorTemperatureChanged(int colorTemperature);
+        void onLightLuminanceChanged(int lum);
     }
 
     protected OnLightFragmentInteracionListener mListener;
@@ -75,16 +75,16 @@ implements CheckBox.OnCheckedChangeListener, ColorPlateCircleView.OnColorPlateCh
         View view = inflater.inflate(R.layout.fragment_light, container, false);
         colorPlateView = (ColorPlateCircleView)view.findViewById(R.id.colorPlateView);
         colorPlateView.setOnColorPlateChangedListener(this);
-        colorFlowView = (ColorFlowCircleView)view.findViewById(R.id.colorFlowView);
-        colorFlowCheck = (CheckBox)view.findViewById(R.id.colorFlowCheck);
-        colorFlowCheck.setOnCheckedChangeListener(this);
-        colorViews = (ViewFlipper)view.findViewById(R.id.colorViews);
+        //colorFlowView = (ColorFlowCircleView)view.findViewById(R.id.colorFlowView);
+        lightModeCheck = (CheckBox)view.findViewById(R.id.lightModeCheck);
+        lightModeCheck.setOnCheckedChangeListener(this);
+        //colorViews = (ViewFlipper)view.findViewById(R.id.colorViews);
         colorCirclesView = view.findViewById(R.id.colorCirclesView);
-        colorFlowCheckView = view.findViewById(R.id.colorFlowCheckView);
+        lightModeCheckView = view.findViewById(R.id.lightModeCheckView);
         lightModeSelector = (RadioGroup)view.findViewById(R.id.lightModeSelector);
         lightModeSelector.setOnCheckedChangeListener(this);
-        lightModeCold = (RadioButton)view.findViewById(R.id.lightModeCold);
-        lightModeWarm = (RadioButton)view.findViewById(R.id.lightModeWarm);
+        lightModeNormal = (RadioButton)view.findViewById(R.id.lightModeNormal);
+        lightModeAlternate = (RadioButton)view.findViewById(R.id.lightModeAlternate);
         lightSwitch = (CheckBox)view.findViewById(R.id.lightSwitch);
         lightSwitch.setOnCheckedChangeListener(this);
         if(mLightColors != null)
@@ -105,26 +105,28 @@ implements CheckBox.OnCheckedChangeListener, ColorPlateCircleView.OnColorPlateCh
 
     @Override
     public void onCheckedChanged(CompoundButton compoundButton, boolean checked) {
-        if(compoundButton == colorFlowCheck) {
-            colorFlowView.setFlow(checked);
-            if(checked)
-                colorViews.setDisplayedChild(VIEW_COLOR_FLOW);
-            else
-                colorViews.setDisplayedChild(VIEW_COLOR_PLATE);
+        if(compoundButton == lightModeCheck) {
+//            colorFlowView.setFlow(checked);
+//            if(checked)
+//                colorViews.setDisplayedChild(VIEW_COLOR_FLOW);
+//            else
+//                colorViews.setDisplayedChild(VIEW_COLOR_PLATE);
+            if(mListener != null)
+                mListener.onLightLuminanceChanged(checked ? Light.LIGHT_LUMINANCE_FULL : Light.LIGHT_LUMINANCE_HALF);
         }
         else if(compoundButton == lightSwitch) {
             if(checked) {
                 colorCirclesView.setVisibility(View.VISIBLE);
-                colorFlowCheckView.setVisibility(View.VISIBLE);
+                lightModeCheckView.setVisibility(View.VISIBLE);
                 lightModeSelector.setVisibility(View.VISIBLE);
-                if(lightModeCold.isChecked())
-                    colorFlowView.setFlow(true);
+//                if(lightModeNormal.isChecked())
+//                    colorFlowView.setFlow(true);
             }
             else {
                 colorCirclesView.setVisibility(View.INVISIBLE);
-                colorFlowCheckView.setVisibility(View.INVISIBLE);
+                lightModeCheckView.setVisibility(View.INVISIBLE);
                 lightModeSelector.setVisibility(View.INVISIBLE);
-                colorFlowView.setFlow(false);
+//                colorFlowView.setFlow(false);
             }
             if(mListener != null)
                 mListener.onLightPowerChanged(checked);
@@ -134,10 +136,8 @@ implements CheckBox.OnCheckedChangeListener, ColorPlateCircleView.OnColorPlateCh
     @Override
     public void onCheckedChanged(RadioGroup radioGroup, int i) {
         if(radioGroup == lightModeSelector) {
-//            boolean colorFlowChecked = lightModeCold.isChecked();
-//            colorFlowView.setFlow(colorFlowChecked);
-//            colorViews.setDisplayedChild(colorFlowChecked ? VIEW_COLOR_FLOW : VIEW_COLOR_PLATE);
-//            updateLightMode();
+            if(mListener != null)
+                mListener.onLightColorTemperatureChanged(lightModeNormal.isChecked() ? Light.LIGHT_COLOR_TEMPERATURE_COLD : Light.LIGHT_COLOR_TEMPERATURE_WARM);
         }
     }
 

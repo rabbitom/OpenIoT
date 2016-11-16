@@ -1,8 +1,8 @@
 <resources>
     <string name="app_name">LightingApp</string>
-    <string name="light_cold">Cold</string>
-    <string name="light_warm">Warm</string>
-    <string name="color_flow">Color Flow</string>
+    <string name="light_normal">Cold</string>
+    <string name="light_alternate">Warm</string>
+    <string name="light_check">Bright</string>
     <string name="set_ip">Set IP Address:</string>
     <string name="ok">OK</string>
     <string name="cancel">Cancel</string>
