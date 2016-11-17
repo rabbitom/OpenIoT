@@ -130,15 +130,13 @@ public class MainActivity extends BaseActivity
         views.setDisplayedChild(0);
     }
 
-    int curLightIndex = -1;
     int curLightsMask = 0;
     int allLightsMask = 0;
 
     public void onTabSwitched(TabItem tab, boolean highlighted) {
         int index = tabs.indexOf(tab);
+        Light.idLight(Light.getLights().get(index), apiHandler);
         //Log.d("ui", String.format("Light%d %s", index+1, highlighted ? "selected" : "deselected"));
-        if(highlighted)
-            curLightIndex = index;
         int lightMask = (int)Math.pow(2,index);
         if(highlighted)
             curLightsMask |= lightMask;
@@ -164,7 +162,7 @@ public class MainActivity extends BaseActivity
     public void onLightColorTemperatureChanged(int colorTemperature) {
         String curLights = curLights();
         if(curLights != null)
-            Light.setLightColor(curLights, colorTemperature, apiHandler);
+            Light.setLightColorTemperature(curLights, colorTemperature, apiHandler);
     }
 
     @Override
@@ -175,10 +173,17 @@ public class MainActivity extends BaseActivity
     }
 
     String curLights() {
-        if(curLightIndex < 0)
+        if(curLightsMask == 0)
             return null;
-        else
-            return (curLightsMask == allLightsMask) ? "all" : Light.getLights().get(curLightIndex);
+        else if(curLightsMask == allLightsMask)
+            return "all";
+        else {
+            int lightIndex = (int) (Math.log(curLightsMask) / Math.log(2));
+            if(lightIndex < Light.getLights().size())
+                return Light.getLights().get(lightIndex);
+            else
+                return null;
+        }
     }
 
     protected void setBgColor(int colorId) {
