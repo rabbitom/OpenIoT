@@ -24,7 +24,7 @@ function initDevice(definition) {
 	startScanning();
 }
 
-fs.readFile('dialog-iot-sensor.json', {encoding: "utf8", flag: "r"}, function(err, data) {
+fs.readFile('ti-sensortag-2015.json', {encoding: "utf8", flag: "r"}, function(err, data) {
 	if(err)
 		console.log("failed to open device definition file due to error: " + err);
 	else {

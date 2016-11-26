@@ -1,0 +1,9 @@
+{
+	"mainService": "aa80",
+	"services": {
+		"0000ffe000001000800000805f9b34fb": "main"
+	},
+	"characteristics": {
+		"0000ffe100001000800000805f9b34fb": "main"
+	}
+}
