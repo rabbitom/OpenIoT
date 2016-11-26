@@ -1,0 +1,83 @@
+{
+	"mainService": "aa80",
+	"services": {
+		"f000aa8004514000b000000000000000": "TI_Movement",
+		"f000aa7004514000b000000000000000": "TI_Light_Sensor",
+		"ffe0": "TI_Simple_Keys"
+	},
+	"characteristics": {
+		"f000aa8104514000b000000000000000": "Movement_Data",
+		"f000aa8204514000b000000000000000": "Movement_Config",
+		"f000aa8304514000b000000000000000": "Movement_Period",
+		"f000aa7104514000b000000000000000": "Light_Sensor_Data",
+		"f000aa7204514000b000000000000000": "Light_Sensor_Config",
+		"f000aa7304514000b000000000000000": "Light_Sensor_Period",
+		"ffe1": "Key_Press_State"
+	},
+	"packets": {
+		"Movement_Config": {
+			"length": 1,
+			"fields": [
+				{
+					"length": 1,
+					"type": "mask",
+					"fields": [
+						{
+							"name": "Gyroscope",
+							"bits": 3,
+							"offset": 0,
+							"values": {
+								"on": 7,
+								"off": 0
+							}
+						},
+						{
+							"name": "Accelerometer",
+							"bits": 3,
+							"offset": 3,
+							"values": {
+								"on": 7,
+								"off": 0
+							}
+						},
+						{
+							"name": "Magnetometer",
+							"bits": 1,
+							"offset": 6,
+							"values": {
+								"on": 1,
+								"off": 0
+							}
+						}
+					]
+				}
+			]
+		},
+		"Light_Sensor_Config": {
+			"length": 1,
+			"fields": [
+				{
+					"name": "Switch",
+					"length": 1,
+					"values": {
+						"on": 1,
+						"off": 0
+					}
+				}
+			]
+		},
+		"Key_Press_State": {
+			"length": 1,
+			"fields": [
+				{
+					"name": "State",
+					"length": 1,
+					"values": {
+						"down": 1,
+						"up": 0
+					}
+				}
+			]
+		}
+	}
+}

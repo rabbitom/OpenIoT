@@ -1,0 +1,11 @@
+{
+  "name": "sensor-gw",
+  "version": "0.0.0",
+  "description": "a ble sensor gateway",
+  "bin": {
+    "sensor-gw": "src/main.js"
+  },
+  "dependencies": {
+    "noble": "^1.7.0"
+  }
+}

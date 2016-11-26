@@ -1,0 +1,17 @@
+name: sensor-gw
+version: "0.0.0"
+summary: Connect sensor tag with ble
+description: search and connect to ble sensor and collect data
+# confinement: strict 
+confinement: devmode
+
+apps:
+    sensor-gw:
+        command: bin/sensor-gw
+        plugs: [bluetooth-control]
+
+parts:
+    sensor-gw:
+        plugin: nodejs
+        source: .
+        node-engine: 6.9.1
