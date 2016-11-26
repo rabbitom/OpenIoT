@@ -36,9 +36,11 @@ fs.readFile('dialog-iot-sensor.json', {encoding: "utf8", flag: "r"}, function(er
 function onDeviceReady() {
 	console.log('ble device is ready!');
 	sensorDevice.startReceiveData('COMMAND_REPLY');
-	var command = new Buffer(1);
-	command[0] = 11;
-	sensorDevice.sendData(command, 'CONTROL_POINT');
+	setTimeout(()=>{
+		var command = new Buffer(1);
+		command[0] = 11;
+		sensorDevice.sendData(command, 'CONTROL_POINT');
+	}, 500);
 }
 
 var receiveBuffer;
@@ -67,6 +69,7 @@ noble.on('discover', function(peripheral) {
 	if(myPeripheral == null) {
 		noble.stopScanning();
 		myPeripheral = peripheral;
+		sensorDevice.setPeripheral(peripheral);
 		peripheral.connect(function(error) {
 			if(error)
 				console.log('cannot connect peripheral');
