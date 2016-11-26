@@ -4,23 +4,17 @@ var fs = require('fs');
 var Packet = require('./lib/packet.js');
 var BleDevice = require('./lib/bledevice.js');
 
-var featureDefines;
-
-fs.readFile('sensor-features.json', {encoding: "utf8", flag: "r"}, function(err, data) {
-	if(err)
-		console.log("failed to open packet definition file due to error: " + err);
-	else {
-		featuredDefines = JSON.parse(data);
-	}
-});
-
 var sensorDevice;
-var myPeripheral;
+var packets;
 
 function initDevice(definition) {
 	sensorDevice = new BleDevice(definition);
 	sensorDevice.on('ready', onDeviceReady);
-	sensorDevice.onReceive('COMMAND_REPLY', onDeviceReceiveData);
+	sensorDevice.onReceive('Key_Press_State', onKeyPressData);
+	// sensorDevice.onReceive('Movement_Data', (data)=>{
+	// 	console.log("movement data:", data);
+	// });
+	sensorDevice.onReceive('Light_Sensor_Data', onLightSensorData);
 	startScanning();
 }
 
@@ -30,27 +24,54 @@ fs.readFile('ti-sensortag-2015.json', {encoding: "utf8", flag: "r"}, function(er
 	else {
 		var definition = JSON.parse(data);
 		initDevice(definition);
+		if(definition.packets) {
+			if(packet == null)
+				packets = new Object();
+			for(var packet in definition.packets) {
+				var packetDefine = definition.packets[packet];
+				packets[packet] = new Packet(packetDefine);
+			}
+		}
 	}
 });
 
 function onDeviceReady() {
 	console.log('ble device is ready!');
-	sensorDevice.startReceiveData('COMMAND_REPLY');
+	sensorDevice.startReceiveData('Key_Press_State');
+	// sensorDevice.startReceiveData('Movement_Data');
+	// setTimeout(()=>{
+	// 	var command = packets.Movement_Config.getBuffer({
+	// 		Accelerometer: 'on',
+	// 		Gyroscope: 'on',
+	// 		Magnetometer: 'on'
+	// 	 });
+	// 	sensorDevice.sendData(command, 'Movement_Config');
+	// 	sensorDevice.sendData(new Buffer([100]), 'Movement_Period');
+	// }, 500);
+	sensorDevice.startReceiveData('Light_Sensor_Data');
 	setTimeout(()=>{
-		var command = new Buffer(1);
-		command[0] = 11;
-		sensorDevice.sendData(command, 'CONTROL_POINT');
+		var command = packets.Light_Sensor_Config.getBuffer({
+			"Switch": "on"
+		});
+		sensorDevice.sendData(command, 'Light_Sensor_Config');
 	}, 500);
 }
 
-var receiveBuffer;
+function onKeyPressData(data) {
+	console.log('receive key press data:', data);
+	if(packets.Key_Press_State) {
+		var result = packets.Key_Press_State.parseBuffer(data);
+		console.log('key press:', result.data);
+	}
+}
 
-function onDeviceReceiveData(data) {
-	if(receiveBuffer == null)
-		receiveBuffer = data;
-	else
-		receiveBuffer = Buffer.concat([receiveBuffer, data]);
-	console.log('receive buffer: ', receiveBuffer);
+function onLightSensorData(data) {
+	console.log("light sensor data:", data);
+	var value = data[0] + data[1] * 0x100;
+	var e = value >> 12;
+	var m = value & 0x0FFF;
+	var o = m * Math.pow(2, e) / 100;
+	console.log('light sensor: ' + o);
 }
 
 var noble = require('noble');
@@ -66,9 +87,8 @@ noble.on('discover', function(peripheral) {
 		id: peripheral.id,
 		rssi: peripheral.rssi
 	}, 'advertisement: ', peripheral.advertisement);
-	if(myPeripheral == null) {
+	if(sensorDevice.peripheral == null) {
 		noble.stopScanning();
-		myPeripheral = peripheral;
 		sensorDevice.setPeripheral(peripheral);
 		peripheral.connect(function(error) {
 			if(error)

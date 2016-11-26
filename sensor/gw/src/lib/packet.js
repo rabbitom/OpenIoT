@@ -1,6 +1,10 @@
 function Packet(define) {
 	for(key in define)
 		this[key] = define[key];
+	if((this.lengthMin == null) && (this.lengthMax == null) && (this.length != null)) {
+		this.lengthMin = this.length;
+		this.lengthMax = this.length;
+	}
 }
 
 Packet.prototype.getBuffer = function(param) {

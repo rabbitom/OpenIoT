@@ -7,3 +7,4 @@ gw/*.snap
 web/browser/aws-iot-sdk-browser-bundle.js
 web/www/aws-configuration.js
 *node_modules/
+*.vscode/
