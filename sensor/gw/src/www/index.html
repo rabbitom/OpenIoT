@@ -1,0 +1,99 @@
+<html>
+  <head>
+    <title>Light Sensor - OpenIoT</title>
+    <script src="/jquery-3.1.1.min.js"></script>
+
+    <script src="/jquery.jqplot.min.js"></script>
+    <link rel="stylesheet" type="text/css" href="/jquery.jqplot.min.css" />
+
+    <script src="raphael-2.1.4.min.js"></script>
+    <script src="justgage.js"></script>
+
+    <script src="/socket.io/socket.io.js"></script>
+    <script>
+      const chartMaxDots = 10;
+      var chart, gage;
+      var values = [];
+      var socket = io.connect('http://localhost');
+      // socket.on('news', function (data) {
+      //   console.log(data);
+      //   socket.emit('my other event', { my: 'data' });
+      // });
+      socket.on('light-sensor-value', function (data) {
+        $('#light-sensor-value').text(data);
+        var value = parseInt(data);
+        updateChart(value);
+        gage.refresh(value);
+      });
+      $(document).ready(function() {
+         $('#light-sensor-value').text('Waiting...');
+         chart = $.jqplot ('light-sensor-chart', [[0]]);
+         gage = new JustGage({
+            id: "light-sensor-gage",
+            value : 0,
+            min: 0,
+            max: 1000,
+            gaugeWidthScale: 0.6,
+            customSectors: {
+              percents: true,
+              ranges: [{
+                color : "#43bf58",
+                lo : 0,
+                hi : 500
+              },{
+                color : "#ff3b30",
+                lo : 501,
+                hi : 1000
+              }]
+            },
+            counter: true
+          });
+      });
+      function updateChart(value) {
+        chart.destroy();
+        if(values.length >= chartMaxDots)
+          values.shift();
+        values.push(value);
+        chart = $.jqplot ('light-sensor-chart', [values]);
+      }
+    </script>
+
+    <style>
+      body {
+        font-family: Arial;
+      }
+      .container {
+        width: 50%;
+        margin: 30px auto;
+        text-align: center;
+        text-align: center;
+      }
+      h3 {
+        margin: 20px 0 10px 0;
+      }
+      .gauge {
+        width: 100%;
+        height: 200px;
+        border: 1px solid #ddd;
+        box-sizing: border-box;
+        margin: 30px 0 20px 0;
+      }
+      .chart {
+        width: 100%;
+        height: 300px;
+      }
+      #light-sensor-value {
+        display: none;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <h3>Light Sensor</h3>
+      <p id="light-sensor-value"></p>
+      <div id="light-sensor-gage" class="gauge"></div>
+      <div id="light-sensor-chart" class="chart"></div>
+      <p>Data from <a href="http://www.ti.com/ww/en/wireless_connectivity/sensortag2015/">SensorTag</a>. Web page powered by <a href="http://socket.io/">socket.io</a>, <a href="http://justgage.com/">JustGage</a> and <a href="http://www.jqplot.com/">jqPlot</a>. <a href="http://git.oschina.net/erabbit/OpenIoT">More&gt;</a></p>
+    </div>
+  </body>
+</html>

@@ -64,6 +64,7 @@ function onLightSensorData(data) {
 	var m = value & 0x0FFF;
 	var o = m * Math.pow(2, e) / 100;
 	console.log('light sensor: ' + o);
+	io.emit('light-sensor-value', '' + o);
 }
 
 var noble = require('noble');
@@ -116,3 +117,23 @@ function startScanning() {
 	if((sensorDevice != null) && (noble.state == 'poweredOn'))
 		noble.startScanning([sensorDevice.define.mainService], false);
 }
+
+var express = require('express');
+var app = express();
+var server = require('http').Server(app);
+var io = require('socket.io')(server);
+
+server.listen(80);
+
+app.get('/', function (req, res) {
+  res.sendFile(__dirname + '/www/index.html');
+});
+
+app.use(express.static('www'));
+
+io.on('connection', function (socket) {
+  socket.emit('news', { hello: 'world' });
+  socket.on('my other event', function (data) {
+    console.log(data);
+  });
+});
