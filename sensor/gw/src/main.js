@@ -1,6 +1,5 @@
 #!/usr/bin/env node
 
-var fs = require('fs');
 var Packet = require('./lib/packet.js');
 var BleDevice = require('./lib/bledevice.js');
 
@@ -11,29 +10,22 @@ function initDevice(definition) {
 	sensorDevice = new BleDevice(definition);
 	sensorDevice.on('ready', onDeviceReady);
 	sensorDevice.onReceive('Key_Press_State', onKeyPressData);
-	// sensorDevice.onReceive('Movement_Data', (data)=>{
-	// 	console.log("movement data:", data);
-	// });
+// sensorDevice.onReceive('Movement_Data', (data)=>{
+// 	console.log("movement data:", data);
+// });
 	sensorDevice.onReceive('Light_Sensor_Data', onLightSensorData);
-	startScanning();
 }
 
-fs.readFile('ti-sensortag-2015.json', {encoding: "utf8", flag: "r"}, function(err, data) {
-	if(err)
-		console.log("failed to open device definition file due to error: " + err);
-	else {
-		var definition = JSON.parse(data);
-		initDevice(definition);
-		if(definition.packets) {
-			if(packet == null)
-				packets = new Object();
-			for(var packet in definition.packets) {
-				var packetDefine = definition.packets[packet];
-				packets[packet] = new Packet(packetDefine);
-			}
-		}
+var sensortag = require('./ti-sensortag-2015.json');
+initDevice(sensortag);
+if(sensortag.packets) {
+	if(packet == null)
+		packets = new Object();
+	for(var packet in sensortag.packets) {
+		var packetDefine = sensortag.packets[packet];
+		packets[packet] = new Packet(packetDefine);
 	}
-});
+}
 
 function onDeviceReady() {
 	console.log('ble device is ready!');
