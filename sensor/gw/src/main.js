@@ -102,5 +102,5 @@ noble.on('discover', function(peripheral) {
 
 function startScanning() {
 	if((sensorDevice != null) && (noble.state == 'poweredOn'))
-		noble.startScanning(sensorDevice.define.services, false);
+		noble.startScanning([sensorDevice.define.mainService], false);
 }
