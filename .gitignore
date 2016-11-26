@@ -1,11 +1,9 @@
 .DS_Store
-gw/node_modules/
 gw/data/
 gw/parts/
 gw/prime/
 gw/stage/
 gw/*.snap
-web/node_modules/
 web/browser/aws-iot-sdk-browser-bundle.js
 web/www/aws-configuration.js
-
+*node_modules/

@@ -1,0 +1,47 @@
+{
+    "ACCELEROMETER": {
+        "dimension": 3,
+        "valueSize": 2,
+        "unit": "g",
+        "precision": 2
+    },
+    "GYROSCOPE": {
+        "dimension": 3,
+        "valueSize": 2,
+        "unit": "deg/s",
+        "precision": 2
+    },
+    "MAGNETOMETER": {
+        "dimension": 3,
+        "valueSize": 2,
+        "unit": "uT",
+        "precision": 0
+    },
+    "BAROMETER": {
+        "dimension": 1,
+        "valueSize": 4,
+        "unit": "Pa",
+        "precision": 0
+    },
+    "TEMPERATURE": {
+        "dimension": 1,
+        "valueSize": 4,
+        "unit": "°C",
+        "precision": 2,
+        "ratio": 100
+    },
+    "HUMIDITY": {
+        "dimension": 1,
+        "valueSize": 4,
+        "unit": "%",
+        "precision": 2,
+        "ratio": 1024
+    },
+    "SFL": {
+        "dimension": 4,
+        "valueSize": 2,
+        "unit": "",
+        "precision": 2,
+        "ratio": 32768
+    }
+}
