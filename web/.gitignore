@@ -1,0 +1,4 @@
+browser/aws-iot-sdk-browser-bundle.js
+lifecycle/.DS_Store
+node_modules/
+www/aws-configuration.js
