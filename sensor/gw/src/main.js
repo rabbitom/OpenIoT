@@ -129,7 +129,7 @@ app.get('/', function (req, res) {
   res.sendFile(__dirname + '/www/index.html');
 });
 
-app.use(express.static('www'));
+app.use(express.static(__dirname + '/www'));
 
 io.on('connection', function (socket) {
   socket.emit('news', { hello: 'world' });
