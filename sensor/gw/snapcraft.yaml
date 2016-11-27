@@ -4,11 +4,12 @@ summary: Connect sensor tag with ble
 description: search and connect to ble sensor and collect data
 # confinement: strict 
 confinement: devmode
+grade: devel
 
 apps:
     sensor-gw:
         command: bin/sensor-gw
-        plugs: [bluetooth-control]
+        plugs: [network, network-bind, bluetooth-control]
 
 parts:
     sensor-gw:
