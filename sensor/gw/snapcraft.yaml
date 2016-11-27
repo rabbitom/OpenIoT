@@ -1,5 +1,5 @@
 name: sensor-gw
-version: "0.0.1"
+version: "0.0.2"
 summary: Connect sensor tag with ble
 description: search and connect to ble sensor and collect data
 # confinement: strict 

@@ -87,6 +87,12 @@ function onLightSensorData(data) {
 		lowLightCount = 0;
 }
 
+var lighting_host = 'localhost';
+var argc = process.argv.length;
+if(argc > 2) {
+	lighting_host = process.argv[2];
+}
+
 function sendAllLightPowerRequest(operation)
 {
 	var postData = queryString.stringify({
@@ -94,6 +100,7 @@ function sendAllLightPowerRequest(operation)
 		"operation": operation
 	});
 	var req = http.request({
+		host: lighting_host,
 		port: 9000,
 		path: '/api/command/light/power',
 		method: 'POST',
