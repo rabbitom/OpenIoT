@@ -70,12 +70,28 @@
 			"length": 1,
 			"fields": [
 				{
-					"name": "State",
 					"length": 1,
-					"values": {
-						"down": 1,
-						"up": 0
-					}
+					"type": "mask",
+					"fields": [
+						{
+							"name": "Key1",
+							"bits": 1,
+							"offset": 0,
+							"values": {
+								"down": 1,
+								"up": 0
+							}
+						},
+						{
+							"name": "Key2",
+							"bits": 1,
+							"offset": 1,
+							"values": {
+								"down": 1,
+								"up": 0
+							}
+						}
+					]
 				}
 			]
 		}

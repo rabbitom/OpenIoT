@@ -54,8 +54,19 @@ function onKeyPressData(data) {
 	if(packets.Key_Press_State) {
 		var result = packets.Key_Press_State.parseBuffer(data);
 		console.log('key press:', result.data);
+		if((result.data.Key1 == "down") && (result.data.Key2 == "up"))
+			sendAllLightPowerRequest("on");
+		else if((result.data.Key1 == "up") && (result.data.Key2 == "down"))
+			sendAllLightPowerRequest("off");
 	}
 }
+
+const lowLightThreshold = 500;
+var lowLightMax = 10;
+var lowLightCount = 0;
+
+var http = require('http');
+var queryString = require('querystring');
 
 function onLightSensorData(data) {
 	console.log("light sensor data:", data);
@@ -65,7 +76,49 @@ function onLightSensorData(data) {
 	var o = m * Math.pow(2, e) / 100;
 	console.log('light sensor: ' + o);
 	io.emit('light-sensor-value', '' + o);
+	if(o < lowLightThreshold) {
+		if(lowLightCount <= lowLightMax) {
+			lowLightCount++;
+			if(lowLightCount == lowLightMax)
+				sendAllLightPowerRequest("on");
+		}	
+	}
+	else
+		lowLightCount = 0;
 }
+
+function sendAllLightPowerRequest(operation)
+{
+	var postData = queryString.stringify({
+		"id": "Light1",
+		"operation": operation
+	});
+	var req = http.request({
+		port: 9000,
+		path: '/api/command/light/power',
+		method: 'POST',
+		headers: {
+			'Content-Type': 'application/x-www-form-urlencoded',
+			'Content-Length': Buffer.byteLength(postData)
+		}
+	}, (res)=>{
+		console.log(`STATUS: ${res.statusCode}`);
+		console.log(`HEADERS: ${JSON.stringify(res.headers)}`);
+		res.setEncoding('utf8');
+		res.on('data', (chunk) => {
+			console.log(`BODY: ${chunk}`);
+		});
+		res.on('end', () => {
+			console.log('No more data in response.');
+		});
+	}); 
+	req.on('error', (e) => {
+		console.log(`problem with request: ${e.message}`);
+	});
+	req.write(postData);
+	req.end();
+}
+
 
 var noble = require('noble');
 
