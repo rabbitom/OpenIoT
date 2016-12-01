@@ -1,4 +1,5 @@
 # 在Dragonboard 410c上安装Ubuntu Core
+
 ## 材料清单
 我们将要下载Ubuntu Core的镜像文件，烧写到SD卡上，然后放到Dragonboard上启动并进行初始化设置。除Dragonboard外，还需要准备以下物品：
 * 电脑（用于烧写SD卡，Windows/Linux/Mac都可以，本文以Macbook为例）
@@ -7,9 +8,11 @@
 * USB接口的键盘
 * HDMI视频线及显示器
 * 可访问Internet的WiFi连接
+
 ## 注册Ubuntu One账号
 最新的Ubuntu Core操作系统默认已不再提供本地登录账号，需要到[Ubuntu网站](https://login.ubuntu.com/)上注册一个Ubuntu One账号（访问各种Ubuntu服务的统一账号）并[上传公钥文件](https://login.ubuntu.com/ssh-keys)。待系统安装好以后，使用私钥文件以SSH方式登录。公钥和私钥对可以在电脑上用ssh-keygen命令生成。
 ![注册Ubuntu One账号](dragonboard-ubuntu-account.png)
+
 ## 下载镜像文件
 到这里下载最新的Ubuntu Core 16镜像：
 [http://releases.ubuntu.com/ubuntu-core/16/](http://releases.ubuntu.com/ubuntu-core/16/)  
@@ -20,6 +23,7 @@ $ md5 ~/Downloads/ubuntu-core-16-dragonboard-410c.img.xz 
 MD5 (/Users/Tom/Downloads/ubuntu-core-16-dragonboard-410c.img.xz) = 2aa8f5b404826818e2de63e947b0bae7
 ```
 将以上的值与文件[http://releases.ubuntu.com/ubuntu-core/16/MD5SUMS](http://releases.ubuntu.com/ubuntu-core/16/MD5SUMS)中的值对比一下，确认一致，以免网络问题导致下载的文件损坏。
+
 ## 烧写SD卡
 1. 将Micro SD卡放进读卡器，插到电脑USB口上，然后使用diskUtil命令查看读卡器对应的设备，此处是/dev/disk2：
     ```
@@ -89,6 +93,7 @@ MD5 (/Users/Tom/Downloads/ubuntu-core-16-dragonboard-410c.img.xz) = 2aa8f5b40482
        9: Linux Filesystem 535.6 MB disk2s9
     ```
 1. 最后，再次将磁盘从电脑上卸载，取下读卡器，拿出SD卡。
+
 ## 启动和初始化
 1. 将烧写好的SD卡装入Drgonboard 410c的卡槽，将板背面的拨码开关S6拨到0110（第2、3位为ON，其他位OFF），连接键盘、显示器，然后接通电源。
     ![拨码开关](dragonboard-switch.jpg)  
@@ -106,6 +111,7 @@ MD5 (/Users/Tom/Downloads/ubuntu-core-16-dragonboard-410c.img.xz) = 2aa8f5b40482
     ![08](dragonboard-ubuntu-setup-8.jpg)  
     ![09](dragonboard-ubuntu-setup-9.jpg)  
     ![10](dragonboard-ubuntu-setup-10.jpg)  
+
 ## SSH登录
 在电脑上确认能够ping通Dragonboard的IP地址，然后使用SSH命令登录，用-i参数指定私钥文件。
 ![SSH登录](dragonboard-login-ssh.png)
