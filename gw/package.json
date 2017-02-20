@@ -5,6 +5,9 @@
   "bin": {
     "lighting-gw": "./gw.js"
   },
+  "scripts": {
+    "start": "node src/main.js"
+  },
   "dependencies": {
     "aws-iot-device-sdk": "latest",
     "serialport": "latest"

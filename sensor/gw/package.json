@@ -5,6 +5,9 @@
   "bin": {
     "sensor-gw": "src/main.js"
   },
+  "scripts": {
+    "start": "node src/main.js"
+  },
   "dependencies": {
     "express": "^4.14.0",
     "noble": "^1.7.0",
