@@ -5,6 +5,11 @@ const assert = require("assert");
 
 var commands = constants.commands;
 
+function ZHAError(msg) {
+    console.log('[ZHA]' + msg);
+    return msg;
+}
+
 function ZHAHost(port) {
     events.EventEmitter.call(this);
     this.serialPort = port;
@@ -104,9 +109,9 @@ commands.network.getNwkAddrByMac.buildMessage = function(host, message, param) {
     return true;
 };
 
-ZHAHost.prototype.buildLightMessage = function(message, param) {
+function buildLightMessage(host, message, param) {
     if(param.id) {
-        var light = this.getLight('id', param.id);
+        var light = host.getLight('id', param.id);
         if(light)
             message.nwkAddr = light.nwkAddr;
         else if(param.id == 'all')
@@ -120,50 +125,33 @@ ZHAHost.prototype.buildLightMessage = function(message, param) {
         return false;
     message.endpoint = constants.lightingEndpoint;
     return true;
-};
+}
+
+for(var commandKey in commands.light) {
+    var command = commands.light[commandKey];
+    command.buildMessage = buildLightMessage;
+}
 
 ZHAHost.prototype.onCommand = function(command, param) {
-    var categoryKey = null;
-    //find category/command key
-    var commandFound = false;
-    for(var iCategoryKey in commands) {
-        var category = commands[iCategoryKey];
-        for(var commandKey in category) {
-            var iCommand = category[commandKey];
-            if(iCommand == command) {
-                categoryKey = iCategoryKey;
-                console.log('on command: ' + commandKey);
-                commandFound = true;
-                break;
-            }
-        }
-        if(commandFound)
-            break;
-    }
     var message = new Message(command.layer, command.id);
     if(command.buildMessage) {
-        if(!command.buildMessage(this, message, param)) {
-            console.log("build message failed, may be something wrong with param: ", param);
-            return;
-        }
+        if(!command.buildMessage(this, message, param))
+            return ZHAError("message not built");
     }
-    else if(categoryKey == "light")
-        this.buildLightMessage(message, param);
     if(command.data.send)
         try {
             message.data = this.makeCommandData(command.data.send, param);
         }
         catch(err) {
-            console.log("make command data failed due to error: " + err);
-            return;
+            return ZHAError("make command data failed due to error: " + err);
         }
-    this.sendMessage(message);
+    return this.sendMessage(message);
 };
 
-ZHAHost.prototype.onUserCommand = function(commandPath, paramStr) {
-    if(commandPath.length == 0)
-        return;
-    console.log(`onUserCommand ${commandPath}` + (paramStr ? (': ' + paramStr) : ''));
+ZHAHost.prototype.onUserCommand = function(commandPath, param) {
+    if((commandPath === undefined) || (typeof commandPath != 'string') || (commandPath == ""))
+        return ZHAError('commandPath string required');
+    console.log(`onUserCommand ${commandPath} `, param ? param : '<no param>');
     var parts = commandPath.split(".");
     if(parts.length == 2) {
         var categoryKey = parts[0];
@@ -172,30 +160,32 @@ ZHAHost.prototype.onUserCommand = function(commandPath, paramStr) {
         if(category) {
             var command = category[commandKey];
             if(command) {
-                if(paramStr) {
-                    var param;
-                    try{
-                        param = JSON.parse(paramStr);
+                if(param) {
+                    if(typeof param == 'string')
+                        try{
+                            param = JSON.parse(param);
+                        }
+                        catch(err) {
+                            return ZHAError("parse param to JSON failed: " + err);
+                        }
+                    if(typeof param == 'object')
+                        return this.onCommand(command, param);
+                    else {
+                        console.log("param is not an object: ", param);
+                        return ZHAError('invalid command param');
                     }
-                    catch(err) {
-                        console.log("parse param to JSON failed: " + err);
-                    }
-                    if(param)
-                        this.onCommand(command, param);
-                    else
-                        console.log("cannot parse param to JSON");
                 }
                 else
-                    this.onCommand(command);
+                    return this.onCommand(command);
             }
             else
-                console.log(`no command of "${commandKey}" found in category "${categoryKey}"`);
+                return ZHAError(`no command of "${commandKey}" found in category "${categoryKey}"`);
         }
         else
-            console.log(`no command category of "${categoryKey}" found`);
+            return ZHAError(`no command category of "${categoryKey}" found`);
     }
     else
-        console.log("cannot parse commandPath");
+        return ZHAError(`invalid commandPath ${commandPath}`);
 };
 
 ZHAHost.prototype.sendMessage = function(message) {
@@ -222,9 +212,10 @@ ZHAHost.prototype.sendMessage = function(message) {
     if(this.serialPort) {
         this.serialPort.write(buffer);
         console.log("sent: ", buffer);
+        return true;
     }
     else
-        console.log("data not sent due to no serial port");
+        return ZHAError("no serial port");
 };
 
 ZHAHost.prototype.onReceive = function(data) {

@@ -149,3 +149,28 @@ function saveDevices() {
 			console.log("failed to write devices file due to error: " + err);
 	})
 }
+
+// local http server
+var express = require('express');
+var bodyParser = require('body-parser');
+
+var app = express();
+var server = require('http').Server(app);
+
+server.listen(process.env.HTTP_LISTEN_PORT || 80);
+app.use(bodyParser.json());
+app.post('/command/:category/:command', function(req, res) {
+	var commandPath = `${req.params.category}.${req.params.command}`;
+	if(host != null) {
+		var result = host.onUserCommand(commandPath, req.body);
+		if(result === true)
+			res.status(200).json({message: "OK"});
+		else if(typeof result == 'string')
+			res.status(500).json({message: result});
+		else
+			res.status(500).json({message: "unusual result"});
+	}
+	else {
+		res.status(500).json({message: "zha host is not initialized."});
+	}
+});

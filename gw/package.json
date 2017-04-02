@@ -10,6 +10,8 @@
   },
   "dependencies": {
     "aws-iot-device-sdk": "latest",
+    "body-parser": "^1.17.1",
+    "express": "^4.15.2",
     "serialport": "latest"
   }
 }
