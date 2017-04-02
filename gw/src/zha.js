@@ -143,8 +143,7 @@ ZHAHost.prototype.onCommand = function(command, param) {
     var message = new Message(command.layer, command.id);
     if(command.buildMessage) {
         if(!command.buildMessage(this, message, param)) {
-            console.log("build message failed, may be something wrong with param: ");
-            console.log(param);
+            console.log("build message failed, may be something wrong with param: ", param);
             return;
         }
     }
@@ -222,15 +221,14 @@ ZHAHost.prototype.sendMessage = function(message) {
     buffer[length-1] = checksum;
     if(this.serialPort) {
         this.serialPort.write(buffer);
-        console.log("sent: " + dataUtils.hexString(buffer));
+        console.log("sent: ", buffer);
     }
     else
-        console.log("could not send: " + dataUtils.hexString(buffer));
+        console.log("data not sent due to no serial port");
 };
 
 ZHAHost.prototype.onReceive = function(data) {
-	console.log('received:')
-	console.log(data);
+	console.log('received:', data)
 	if(((rxBufferLen == 0) && (data[0] == 0xFE)) || (rxBufferLen > 0)) {
 		data.copy(rxBuffer, 0, 0, data.length);
 		rxBufferLen += data.length;

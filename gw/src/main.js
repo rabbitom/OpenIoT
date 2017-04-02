@@ -8,7 +8,7 @@ var Light = ZHA.light;
 
 var host = null;
 
-console.log("This is a smart lighting gateway based on AWS IoT, which communicates to Zigbee Home Automation network via USB dongle.");
+console.log("lighting gateway started");
 
 //load start parameters as user command
 
@@ -124,11 +124,6 @@ function initHost() {
 		saveDevices();
 	});
 	host.onInit();
-	// host.loadDevices([
-	// 	{id: 'Light1', uid: '8357FE0001881700'},
-	// 	{id: 'Light2', uid: '8B5DF90001881700'},
-	// 	{id: 'Light3', uid: '285EF90001881700'}
-	// ]);
 	fs.readFile(dataPath+"devices.json", {encoding: "utf8", flag: "r"}, function(err, data) {
 		if(err)
 			console.log("failed to open devices file due to error: " + err);
@@ -154,25 +149,3 @@ function saveDevices() {
 			console.log("failed to write devices file due to error: " + err);
 	})
 }
-
-function reportState() {
-    var curState = new Object();
-	if(host.lights == null)
-		return;
-    for(var light of host.lights) {
-        curState[light.id] = {
-            power: light.power
-        };
-    }
-    var state = {
-        "state": {
-            "reported": curState
-        }
-    };
-    console.log('updated shadow: ' + JSON.stringify(state));
-    // clientTokenUpdate = thingShadows.update(gateway.id, state);
-    // if (clientTokenUpdate)
-    //     console.log('updated shadow: ' + JSON.stringify(state));
-    // else
-    //     console.log('update shadow failed, operation still in progress');
-};
