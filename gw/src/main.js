@@ -111,6 +111,7 @@ function initHost() {
 			"id": light.id,
 			"power": light.power
 		}));
+		reportState();
 	});
 	host.on("foundNewLight", function(light) {
 		console.log("found new light: " + JSON.stringify({
@@ -174,6 +175,161 @@ app.post('/command/:category/:command', function(req, res) {
 			res.status(500).json({message: "unusual result"});
 	}
 	else {
-		res.status(500).json({message: "zha host is not initialized."});
+		res.status(500).json({message: "host is not initialized."});
 	}
 });
+
+var multipart = require('connect-multiparty');
+var multipartMiddleware = multipart();
+
+app.post('/config-aws-iot', multipartMiddleware, function(req, res) {
+	if((req.body.clientId === undefined) || (req.body.clientId == ""))
+		res.status(500).json({message:"clientId required"});
+	else {
+		awsIoTConfig.configs.clientId = req.body.clientId;
+		for(var fileKey in req.files) {
+			var file = req.files[fileKey];
+			awsIoTConfig.saveFile(fileKey, file);
+		}
+		res.status(200).json({message:"OK"});
+	}
+});
+
+app.post('/connect-to-aws', function(req, res) {
+	if(thingShadows == null) {
+		if(awsIoTConfig.isValid()) {
+			initThingShadows();
+			res.status(200).json({message: "OK"});
+		}
+		else
+			res.status(500).json({message: "certificate is not configured"});
+	}
+	else
+		res.status(500).json({message:"thing shadows already inited"});
+});
+
+app.get('/', function (req, res) {
+  res.sendFile(__dirname + '/static/dashboard.html');
+});
+
+app.use(express.static(__dirname + '/static'));
+
+// aws iot thing shadows
+
+var awsIot = require('aws-iot-device-sdk');
+
+var thingShadows;
+var thingShadowsConnected = false;
+
+var gatewayId;
+
+var awsIoTConfig =  {
+	configs: {},
+	isValid: function() {
+		if((this.configs.clientId !== undefined) && (this.configs.private_key !== undefined) && (this.configs.certificate !== undefined) && (this.configs.ca !== undefined))
+			return true;
+		else
+			return false;
+	},
+	load: function() {
+		fs.readFile(dataPath+"configs.json", {encoding: "utf8", flag: "r"}, function(err, data) {
+			if(err)
+				console.log("failed to open configs file due to error: " + err);
+			else {
+				try {
+					awsIoTConfig.configs = JSON.parse(data);
+				}
+				catch(err) {
+					console.log("failed to load configs file due to error: " + err);
+				}
+				if(awsIoTConfig.isValid())
+					initThingShadows();
+			}
+		});
+	},
+	save: function() {
+		fs.writeFile(dataPath+"configs.json", JSON.stringify(this.configs), {encoding:"utf8",flag:"w"}, function(err) {
+			if(err)
+				console.log("failed to write configs file due to error: " + err);
+		})
+	},
+	saveFile: function(fileKey, file) {
+		var tmpPath = file.path;
+		console.log("uploaded cert file: " + tmpPath);
+		var targetPath = dataPath + file.name;
+		fs.rename(tmpPath, targetPath, (err)=>{
+			if(err)
+				console.log("move file failed: " + err);
+			else
+				awsIoTConfig.configs[fileKey] = targetPath;
+		});
+	}
+};
+
+awsIoTConfig.load();
+
+function initThingShadows() {
+	gatewayId = awsIoTConfig.configs.clientId;
+
+	thingShadows = awsIot.thingShadow({
+		keyPath: awsIoTConfig.configs.private_key,
+		certPath: awsIoTConfig.configs.certificate,
+		caPath: awsIoTConfig.configs.ca,
+		clientId: gatewayId,
+		region: 'ap-northeast-1',
+	});
+
+	thingShadows.on('connect', function() {
+		console.log("connected to aws iot");
+		awsIoTConfig.save();
+		thingShadows.register(gatewayId);
+		thingShadowsConnected = true;
+		//setTimeout(gateway.reportState, 5000);
+	});
+
+	thingShadows.on('disconnect', function() {
+		thingShadowsConnected = false;
+	});
+
+	thingShadows.on('status', function(thingName, stat, clientToken, stateObject) {
+		console.log(`received ${stat} on ${thingName}: `, stateObject);
+	});
+
+	thingShadows.on('delta', function(thingName, stateObject) {
+		console.log(`received delta on ${thingName}: `, stateObject);
+		var deltaState = stateObject.state;
+		for(var lightId in deltaState) {
+			var powerState = deltaState[lightId].power;
+			if(host)
+				host.onUserCommand("light.power", {
+					"id":lightId,
+					"operation":powerState
+				});
+		}
+	});
+
+	thingShadows.on('timeout', function(thingName, clientToken) {
+		console.log(`received timeout on ${thingName} with token: ${clientToken}`);
+	});
+}
+
+function reportState() {
+	if((thingShadows == null) || (!thingShadowsConnected) || (host == null))
+		return;
+    var curState = new Object();
+    for(var light of host.lights) {
+        curState[light.id] = {
+            power: light.power
+        };
+    }
+    var state = {
+        "state": {
+            "reported": curState
+        }
+    };
+    var clientTokenUpdate = thingShadows.update(gatewayId, state);
+    if (clientTokenUpdate)
+        console.log('updated thing shadow: ', state);
+    else
+        console.log('update thing shadow failed');
+}

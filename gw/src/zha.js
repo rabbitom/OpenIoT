@@ -275,8 +275,8 @@ ZHAHost.prototype.onReceive = function(data) {
                     var dataObject = this.parseCommandData(feedbackData, rxMessage.data);
                     console.log(dataObject);
                     rxMessage.dataObject = dataObject;
-                    this.emit(commandKey + feedback, rxMessage);
                 }
+                this.emit(commandKey + feedback, rxMessage);
             }
 			if(rxBufferLen == rxMessageLen) {
 				rxBufferLen = 0;

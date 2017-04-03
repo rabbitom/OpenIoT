@@ -1,0 +1,38 @@
+<html>
+    <head>
+        <title>Config AWS IoT Client</title>
+        <script src="jquery-3.1.1.min.js"></script>
+    </head>
+    <body>
+        <iframe name="upload-iframe" style="display:none;" frameborder=“0”></iframe>
+        <form target="upload-iframe" action="/config-aws-iot" id="upload-form" method="post" enctype="multipart/form-data">
+            Client Id: <input type="text" name="clientId" value="MyFirstGateway"/><br/>
+            Private Key: <input type="file" name="private_key"/><br/>
+            Certificate: <input type="file" name="certificate"/><br/>
+            CA: <input type="file" name="ca"/>
+        </form>
+        <button id="upload-button">upload</button>
+        <button id="connect-button">connect</button>
+        <script>
+            $('#upload-button').click(function() {
+                $('#upload-form').submit();
+            });
+            $('#connect-button').click(function() {
+                $.ajax({
+                    url: '/connect-to-aws',
+                    method: 'post',
+                    success: function(response, status) {
+                        alert(response.message);
+                    },
+                    error: function(xhr, status, error) {
+                        var res = xhr.responseJSON;
+                        if(res)
+                            alert(res.message);
+                        else
+                            alert(error);
+                    }
+                })
+            })
+        </script>
+    </body>
+</html>
