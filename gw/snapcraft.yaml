@@ -1,5 +1,5 @@
 name: lighting-gw
-version: "0.1.0"
+version: "0.1.1"
 summary: Connect local lighing devices to cloud
 description: This is a smart lighting gateway, which communicates with Zigbee Home Automation network and connect it to cloud.
 # confinement: strict 
@@ -7,9 +7,9 @@ confinement: devmode
 
 apps:
     lighting-gw:
-        daemon: simple
+        # daemon: simple
         command: bin/lighting-gw
-        plugs: [serial-port, network, home]
+        plugs: [serial-port, network, network-bind, home]
 
 parts:
     lighting-gw:
