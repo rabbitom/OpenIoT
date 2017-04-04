@@ -132,6 +132,25 @@ for(var commandKey in commands.light) {
     command.buildMessage = buildLightMessage;
 }
 
+ZHAHost.prototype.setLightState = function(light, newState, force) {
+    if(light.nwkAddr) {
+        for(var key in newState) {
+            var newValue = newState[key];
+            if((light[key] != newValue) || force) {
+                if(key == 'power') {
+                    console.log(`set ${light.id} power to ${newValue}`);
+                    this.onCommand(commands.light.power, {
+                        nwkAddr: light.nwkAddr,
+                        operation: newValue
+                    });
+                }
+            }
+        }
+    }
+    else
+        return ZHAError(`failed to set light state, ${light.id} is offline`);
+}
+
 ZHAHost.prototype.onCommand = function(command, param) {
     var message = new Message(command.layer, command.id);
     if(command.buildMessage) {

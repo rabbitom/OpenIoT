@@ -214,6 +214,37 @@ app.get('/', function (req, res) {
 
 app.use(express.static(__dirname + '/static'));
 
+app.post('/lights/:lightId/status', function(req, res) {
+	var lightId = req.params.lightId;
+	if(host) {
+		var light = host.getLight('id', lightId);
+		if(light) {
+			//update thing shadow
+			if((thingShadows !== undefined) && thingShadowsConnected) {
+				var newState = new Object();
+				newState[lightId] = req.body;
+				var state = {
+					"state": {
+						"desired": newState
+					}
+				};
+				var clientUpdateToken = thingShadows.update(gatewayId, state);
+				if(clientUpdateToken)
+					console.log("updated desired thing shadow:", newState);
+				else
+					console.log("update desired thing shadow failed");
+			}
+			//set state
+			host.setLightState(light, req.body);	
+			res.status(200).json({message:"OK"});
+		}
+		else
+			res.status(500).json({message:`${lightId} does not exist`});
+	}
+	else
+		res.status(500).json({message:'host not initialized'});
+});
+
 // aws iot thing shadows
 
 var awsIot = require('aws-iot-device-sdk');
@@ -284,27 +315,30 @@ function initThingShadows() {
 		awsIoTConfig.save();
 		thingShadows.register(gatewayId);
 		thingShadowsConnected = true;
-		//setTimeout(gateway.reportState, 5000);
 	});
 
 	thingShadows.on('disconnect', function() {
+		console.log("disconnected from aws iot");
 		thingShadowsConnected = false;
 	});
 
 	thingShadows.on('status', function(thingName, stat, clientToken, stateObject) {
 		console.log(`received ${stat} on ${thingName}: `, stateObject);
+		if(latestStateReportFailed)
+			reportState();
 	});
 
 	thingShadows.on('delta', function(thingName, stateObject) {
 		console.log(`received delta on ${thingName}: `, stateObject);
 		var deltaState = stateObject.state;
-		for(var lightId in deltaState) {
-			var powerState = deltaState[lightId].power;
-			if(host)
-				host.onUserCommand("light.power", {
-					"id":lightId,
-					"operation":powerState
-				});
+		if(host) {
+			for(var lightId in deltaState) {
+				var light = host.getLight(lightId);
+				if(light) {
+					var newState = deltaState[lightId];
+					host.setLightState(light, newState);
+				}
+			}
 		}
 	});
 
@@ -312,6 +346,8 @@ function initThingShadows() {
 		console.log(`received timeout on ${thingName} with token: ${clientToken}`);
 	});
 }
+
+var latestStateReportFailed = false;
 
 function reportState() {
 	if((thingShadows == null) || (!thingShadowsConnected) || (host == null))
@@ -328,8 +364,12 @@ function reportState() {
         }
     };
     var clientTokenUpdate = thingShadows.update(gatewayId, state);
-    if (clientTokenUpdate)
-        console.log('updated thing shadow: ', state);
-    else
-        console.log('update thing shadow failed');
+    if (clientTokenUpdate) {
+		latestStateReportFailed = false;
+        console.log('updated reported thing shadow: ', curState);
+	}
+    else {
+		latestStateReportFailed = true;
+        console.log('update reported thing shadow failed');
+	}
 }
