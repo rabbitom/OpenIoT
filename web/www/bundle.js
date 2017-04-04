@@ -112,13 +112,15 @@ const shadows = AWSIoTData.thingShadow({
 shadows.on('delta', function(name, stateObject) {
       console.log('received delta of ' + name + ': ' + JSON.stringify(stateObject));
       if (name === defaultThingName) {
-            var htmlText = '';
+            //var htmlText = '';
+            $('.lightSwitch').off('switchChange.bootstrapSwitch');
             var lights = stateObject.state;
             for(var light in lights) {
                   var state = lights[light];
                   //document.getElementById(light + '-state').innerHTML = state.power;
                   $('#' + light + '-state').bootstrapSwitch('state', (state.power == 'on'));
             }
+            $('.lightSwitch').on('switchChange.bootstrapSwitch', onLightSwitchChange);
       }
 });
 
@@ -146,6 +148,7 @@ shadows.on('status', function(name, statusType, clientToken, stateObject) {
                   //var htmlText = '';
                   //$('#lighting-control-div').empty();
                   $('#lighting-control-div > p').hide();
+                  $('.lightSwitch').off('switchChange.bootstrapSwitch');
                   var lights = stateObject.state.reported;
                   for(var light in lights) {
                         var state = lights[light];
@@ -159,28 +162,30 @@ shadows.on('status', function(name, statusType, clientToken, stateObject) {
                   }
                   //document.getElementById('lighting-control-div').innerHTML = htmlText;
                   //$(".lightSwitch").bootstrapSwitch();
-                  $('.lightSwitch').on('switchChange.bootstrapSwitch', function(event, state) {
-                        //console.log(event); // jQuery event
-                        //console.log(state); // true | false
-                        var lightId = $(this).attr('lightId');
-                        var curState = new Object();
-                        curState[lightId] = {
-                              power: state ? "on" : "off"
-                        };
-                        var state = {
-                              "state": {
-                                    "desired": curState
-                              }
-                        };
-                        var clientTokenUpdate = shadows.update(defaultThingName, state);
-                        if (clientTokenUpdate)
-                              console.log('updated shadow: ' + JSON.stringify(state));
-                        else
-                              console.log('update shadow failed, operation still in progress');
-                  });
+                  $('.lightSwitch').on('switchChange.bootstrapSwitch', onLightSwitchChange);
             }
       }
 });
+
+function onLightSwitchChange(event, state) {
+      //console.log(event); // jQuery event
+      //console.log(state); // true | false
+      var lightId = $(this).attr('lightId');
+      var curState = new Object();
+      curState[lightId] = {
+            power: state ? "on" : "off"
+      };
+      var state = {
+            "state": {
+                  "desired": curState
+            }
+      };
+      var clientTokenUpdate = shadows.update(defaultThingName, state);
+      if (clientTokenUpdate)
+            console.log('updated shadow: ' + JSON.stringify(state));
+      else
+            console.log('update shadow failed, operation still in progress');
+}
 
 //
 // Attempt to authenticate to the Cognito Identity Pool.  Note that this
