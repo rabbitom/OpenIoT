@@ -41,7 +41,7 @@ public class Light {
     static String serverIp = "192.168.0.100";
 
     static String getUrl(String suffix) {
-        return "http://" + serverIp + ":9000/api" + suffix;
+        return "http://" + serverIp + ":9000" + suffix;
     }
 
     public static void setServerIp(String ip) {
