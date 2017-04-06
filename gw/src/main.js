@@ -48,27 +48,29 @@ process.stdin.on('readable', () => {
 //find a USB serial port and init the host
 
 var portName = 'USB';
-var portFound = false;
-var serialPortEnumTimer = setInterval(()=> {
+
+function findSerialPort() {
 	console.log("listing serial ports");
 	SerialPort.list(function (err, ports) {
 		if(err)
 			console.log("list serial port failed with error: " + err);
 		else
 			ports.forEach(function(port) {
-				if(portFound)
+				if(hostPort)
 					return;
 				if(port.comName.indexOf(portName) > 0) {
 					console.log("found serial port " + port.comName);
-					portFound = true;
 					onPortFound(port);
-					clearInterval(serialPortEnumTimer);
 				}
 			});
+		if(hostPort === undefined)
+			setTimeout(findSerialPort, 10000);
 	});
-}, 10000);
+}
 
-var hostPort = null;
+findSerialPort();
+
+var hostPort;
 
 function onPortFound(port) {
 	hostPort = new SerialPort(port.comName, {
