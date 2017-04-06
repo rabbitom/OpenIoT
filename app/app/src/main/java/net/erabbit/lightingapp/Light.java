@@ -3,7 +3,7 @@ package net.erabbit.lightingapp;
 import android.graphics.Color;
 import android.os.Handler;
 
-import net.erabbit.common_lib.HttpRequestThread;
+import net.erabbit.common_lib.HttpThread;
 
 import java.util.ArrayList;
 
@@ -67,7 +67,7 @@ public class Light {
 
     public static void setLightPower(String lightId, int power, Handler handler) {
         String url = getUrl("/command/light/power");
-        HttpRequestThread thread = new HttpRequestThread(url, handler, MSG_LIGHT_POWER);
+        HttpThread thread = new HttpThread(url, handler, MSG_LIGHT_POWER);
         thread.addParam("id", lightId);
         thread.addParam("operation", (power == LIGHT_POWER_ON) ? "on" : "off");
         thread.start();
@@ -75,7 +75,7 @@ public class Light {
 
     public static void setLightColor(String lightId, int color, Handler handler) {
         String url = getUrl("/command/light/hueSaturation");
-        HttpRequestThread thread = new HttpRequestThread(url, handler, MSG_LIGHT_COLOR);
+        HttpThread thread = new HttpThread(url, handler, MSG_LIGHT_COLOR);
         float hsv[] = new float[3];
         Color.colorToHSV(color, hsv);
         thread.addParam("id", lightId);
@@ -87,7 +87,7 @@ public class Light {
 
     public static void setLightColorTemperature(String lightId, int colorTemperature, Handler handler) {
         String url = getUrl("/command/light/colorTemperature");
-        HttpRequestThread thread = new HttpRequestThread(url, handler, MSG_LIGHT_COLOR_TEMPERATURE);
+        HttpThread thread = new HttpThread(url, handler, MSG_LIGHT_COLOR_TEMPERATURE);
         thread.addParam("id", lightId);
         thread.addParam("colorTemperature", colorTemperature);
         thread.addParam("duration", 2);
@@ -96,7 +96,7 @@ public class Light {
 
     public static void setLightLuminance(String lightId, int lum, Handler handler) {
         String url = getUrl("/command/light/lum");
-        HttpRequestThread thread = new HttpRequestThread(url, handler, MSG_LIGHT);
+        HttpThread thread = new HttpThread(url, handler, MSG_LIGHT);
         thread.addParam("id", lightId);
         thread.addParam("lum", lum);
         thread.addParam("duration", 2);
@@ -105,7 +105,7 @@ public class Light {
 
     public static void idLight(String lightId, Handler handler) {
         String url = getUrl("/command/ha/blink");
-        HttpRequestThread thread = new HttpRequestThread(url, handler, MSG_LIGHT);
+        HttpThread thread = new HttpThread(url, handler, MSG_LIGHT);
         thread.addParam("id", lightId);
         thread.addParam("time", 2);
         thread.start();
