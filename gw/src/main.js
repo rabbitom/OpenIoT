@@ -182,11 +182,11 @@ app.post('/command/:category/:command', function(req, res) {
 var multipart = require('connect-multiparty');
 var multipartMiddleware = multipart();
 
-app.post('/config-aws-iot', multipartMiddleware, function(req, res) {
+app.post('/aws/setup', multipartMiddleware, function(req, res) {
 	if((req.body.clientId === undefined) || (req.body.clientId == ""))
 		res.status(500).json({message:"clientId required"});
 	else {
-		awsIoTConfig.configs.clientId = req.body.clientId;
+		awsIoTConfig.params.clientId = req.body.clientId;
 		for(var fileKey in req.files) {
 			var file = req.files[fileKey];
 			awsIoTConfig.saveFile(fileKey, file);
@@ -195,7 +195,7 @@ app.post('/config-aws-iot', multipartMiddleware, function(req, res) {
 	}
 });
 
-app.post('/connect-to-aws', function(req, res) {
+app.post('/aws/connect', function(req, res) {
 	if(thingShadows == null) {
 		if(awsIoTConfig.isValid()) {
 			initThingShadows();
@@ -206,6 +206,16 @@ app.post('/connect-to-aws', function(req, res) {
 	}
 	else
 		res.status(500).json({message:"thing shadows already inited"});
+});
+
+app.post('/aws/config', function(req, res) {
+	if(typeof(req.body['auto-connect']) == 'boolean') {
+		awsIoTConfig.params['auto-connect'] = req.body['auto-connect'];
+		awsIoTConfig.save();
+		res.status(200).json({message:"OK"});
+	}
+	else
+		res.status(400).json({message:"Only 'auto-connect' is supported for now!"});
 });
 
 app.get('/', function (req, res) {
@@ -255,33 +265,33 @@ var thingShadowsConnected = false;
 var gatewayId;
 
 var awsIoTConfig =  {
-	configs: {},
+	params: {},
 	isValid: function() {
-		if((this.configs.clientId !== undefined) && (this.configs.private_key !== undefined) && (this.configs.certificate !== undefined) && (this.configs.ca !== undefined))
+		if((this.params.clientId !== undefined) && (this.params.private_key !== undefined) && (this.params.certificate !== undefined) && (this.params.ca !== undefined))
 			return true;
 		else
 			return false;
 	},
 	load: function() {
-		fs.readFile(dataPath+"configs.json", {encoding: "utf8", flag: "r"}, function(err, data) {
+		fs.readFile(dataPath+"aws-iot-config.json", {encoding: "utf8", flag: "r"}, function(err, data) {
 			if(err)
-				console.log("failed to open configs file due to error: " + err);
+				console.log("failed to open params file due to error: " + err);
 			else {
 				try {
-					awsIoTConfig.configs = JSON.parse(data);
+					awsIoTConfig.params = JSON.parse(data);
 				}
 				catch(err) {
-					console.log("failed to load configs file due to error: " + err);
+					console.log("failed to load params file due to error: " + err);
 				}
-				if(awsIoTConfig.isValid())
+				if(awsIoTConfig.isValid() && awsIoTConfig.params['auto-connect'])
 					initThingShadows();
 			}
 		});
 	},
 	save: function() {
-		fs.writeFile(dataPath+"configs.json", JSON.stringify(this.configs), {encoding:"utf8",flag:"w"}, function(err) {
+		fs.writeFile(dataPath+"aws-iot-config.json", JSON.stringify(this.params), {encoding:"utf8",flag:"w"}, function(err) {
 			if(err)
-				console.log("failed to write configs file due to error: " + err);
+				console.log("failed to write params file due to error: " + err);
 		})
 	},
 	saveFile: function(fileKey, file) {
@@ -292,7 +302,7 @@ var awsIoTConfig =  {
 			if(err)
 				console.log("move file failed: " + err);
 			else
-				awsIoTConfig.configs[fileKey] = targetPath;
+				awsIoTConfig.params[fileKey] = targetPath;
 		});
 	}
 };
@@ -300,12 +310,12 @@ var awsIoTConfig =  {
 awsIoTConfig.load();
 
 function initThingShadows() {
-	gatewayId = awsIoTConfig.configs.clientId;
+	gatewayId = awsIoTConfig.params.clientId;
 
 	thingShadows = awsIot.thingShadow({
-		keyPath: awsIoTConfig.configs.private_key,
-		certPath: awsIoTConfig.configs.certificate,
-		caPath: awsIoTConfig.configs.ca,
+		keyPath: awsIoTConfig.params.private_key,
+		certPath: awsIoTConfig.params.certificate,
+		caPath: awsIoTConfig.params.ca,
 		clientId: gatewayId,
 		region: 'ap-northeast-1',
 	});

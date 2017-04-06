@@ -5,7 +5,7 @@
     </head>
     <body>
         <iframe name="upload-iframe" style="display:none;" frameborder=“0”></iframe>
-        <form target="upload-iframe" action="/config-aws-iot" id="upload-form" method="post" enctype="multipart/form-data">
+        <form target="upload-iframe" action="/aws/setup" id="upload-form" method="post" enctype="multipart/form-data">
             Client Id: <input type="text" name="clientId" value="MyFirstGateway"/><br/>
             Private Key: <input type="file" name="private_key"/><br/>
             Certificate: <input type="file" name="certificate"/><br/>
@@ -13,13 +13,14 @@
         </form>
         <button id="upload-button">upload</button>
         <button id="connect-button">connect</button>
+        <input type="checkbox" id="auto-connect-check"/>Auto Connect
         <script>
             $('#upload-button').click(function() {
                 $('#upload-form').submit();
             });
             $('#connect-button').click(function() {
                 $.ajax({
-                    url: '/connect-to-aws',
+                    url: '/aws/connect',
                     method: 'post',
                     success: function(response, status) {
                         alert(response.message);
@@ -32,7 +33,21 @@
                             alert(error);
                     }
                 })
-            })
+            });
+            $('#auto-connect-check').click(function() {
+                console.log();
+                $.ajax({
+                    url: '/aws/config',
+                    method: 'post',
+                    contentType: 'application/json; charset=UTF-8',
+                    data: JSON.stringify({
+                        "auto-connect": $(this).is(':checked')
+                    }),
+                    success: function(response, status) {
+                        console.log('set auto-connect: ' + response.message);
+                    }
+                })
+            });
         </script>
     </body>
 </html>
