@@ -93,6 +93,12 @@ implements CheckBox.OnCheckedChangeListener, ColorPlateCircleView.OnColorPlateCh
     }
 
     @Override
+    public void onViewCreated(View view, Bundle savedInstanceState) {
+        super.onViewCreated(view, savedInstanceState);
+        view.setVisibility(View.INVISIBLE);
+    }
+
+    @Override
     public void onAttach(Activity activity) {
         super.onAttach(activity);
         try {

@@ -143,6 +143,9 @@ public class MainActivity extends BaseActivity
         else if((curLightsMask & lightMask) > 0)
             curLightsMask -= lightMask;
         Log.d("ui", "lights mask = " + curLightsMask);
+        View lightView = lightFragment.getView();
+        if(lightView != null)
+            lightView.setVisibility(curLightsMask == 0 ? View.INVISIBLE : View.VISIBLE);
     }
 
     @Override
