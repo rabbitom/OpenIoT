@@ -28,6 +28,7 @@ public class ColorPlateCircleView extends View {
 
     protected float initAngle = -90f;
     protected float beginTouchAngle, beginInitAngle;
+    protected boolean colorHasChanged = false;
 
     protected static final int defaultColor = Color.WHITE;
     protected ArrayList<Integer> colors;
@@ -143,6 +144,19 @@ public class ColorPlateCircleView extends View {
         return new float[]{r, 360 - a};
     }
 
+    protected float normalizedAngle(float a) {
+        while(a < 0)
+            a += 360;
+        while(a >= 360)
+            a -= 360;
+        return a;
+    }
+
+    protected float angleDistance(float a, float b) {
+        float d = normalizedAngle(a - b);
+        return (d > 180) ? (360 - d) : d;
+    }
+
     @Override
     public boolean onTouchEvent(MotionEvent event) {
         float[] ra = calcRaiusAngle(event, new PointF(diameter/2, diameter/2));
@@ -152,6 +166,7 @@ public class ColorPlateCircleView extends View {
             if(radius > diameter / 2 - circleWidth) {
                 beginTouchAngle = angle;
                 beginInitAngle = initAngle;
+                colorHasChanged = false;
                 return true;
             }
             else
@@ -163,6 +178,7 @@ public class ColorPlateCircleView extends View {
             int newColor = getColor();
             if(newColor != curColor) {
                 curColor = newColor;
+                colorHasChanged = false;
                 if(onColorPlateChangedListener != null)
                     onColorPlateChangedListener.onColorPlateChanged();
             }
@@ -170,7 +186,7 @@ public class ColorPlateCircleView extends View {
         }
         else if(event.getAction() == MotionEvent.ACTION_UP) {
             //单击动作
-            if(angle == beginTouchAngle) {
+            if((!colorHasChanged) && (angleDistance(angle, beginTouchAngle) < 10)) {
                 int newColor = getColorAt(initAngle + (-90f - beginTouchAngle));
                 if(newColor != curColor) {
                     setColor(newColor);
