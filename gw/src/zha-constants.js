@@ -118,8 +118,16 @@ var commands =  {
                 status: 1
             }
         }},
-		// addGroup: {layer: 4, id: 0x04},
-		// removeGroup: {layer: 4, id: 0x05},
+		addGroup: {layer: 4, id: 0x04, data: {
+            send: {
+                group: {length: 2}
+            }
+        }},
+		removeGroup: {layer: 4, id: 0x05, data: {
+            send: {
+                group: {length: 2}
+            }
+        }}
 		// clearGroups: {layer: 4, id: 0x06},
 		// getGroup: {layer: 4, id: 0x07},
 		// getSceneCount: {layer: 4, id: 0x08},

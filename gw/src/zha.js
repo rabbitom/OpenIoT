@@ -121,10 +121,19 @@ function buildLightMessage(host, message, param) {
     }
     else if(param.nwkAddr)
         message.nwkAddr = param.nwkAddr;
+    else if(param.group) {
+        message.nwkAddr = param.group;
+        message.addrType = constants.addrTypes.multicast;
+    }
     else
         return false;
     message.endpoint = constants.lightingEndpoint;
     return true;
+}
+
+for(var commandKey in commands.ha) {
+    var command = commands.ha[commandKey];
+    command.buildMessage = buildLightMessage;
 }
 
 for(var commandKey in commands.light) {
