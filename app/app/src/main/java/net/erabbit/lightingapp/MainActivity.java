@@ -37,8 +37,9 @@ public class MainActivity extends BaseActivity
     public void onLanDeviceFound(LanSearchThread.DeviceInfo deviceInfo) {
         if((busyDialog != null) && busyDialog.isShowing())
             busyDialog.dismiss();
-        Toast.makeText(this, "Gateway found: " + Light.serverIp, Toast.LENGTH_SHORT).show();
-        setLightServerIp(deviceInfo.getAddress());
+        String ipAddress = deviceInfo.getAddress();
+        Toast.makeText(this, "Gateway found: " + ipAddress, Toast.LENGTH_SHORT).show();
+        setLightServerIp(ipAddress);
     }
 
     @Override
@@ -170,7 +171,7 @@ public class MainActivity extends BaseActivity
     }
 
     void setLightServerIp(String newIp) {
-        Light.serverIp = newIp;
+        Light.setServerIp(newIp);
         actionBarRightIcon.setVisibility(View.INVISIBLE);
         createLightItems();
     }

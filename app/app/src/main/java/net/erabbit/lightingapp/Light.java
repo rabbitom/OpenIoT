@@ -38,7 +38,7 @@ public class Light {
         return lights;
     }
 
-    static String serverIp = "192.168.1.108";
+    private static String serverIp;
 
     static String getUrl(String suffix) {
         return "http://" + serverIp + ":9000" + suffix;
