@@ -180,7 +180,7 @@ udp.on('message', (msg, remote)=>{
 	});
 });
 
-udp.bind(process.env.UDP_LISTEN_PORT || 80);
+udp.bind(process.env.UDP_LISTEN_PORT || 9000);
 
 // local http server
 var express = require('express');
@@ -189,7 +189,7 @@ var bodyParser = require('body-parser');
 var app = express();
 var server = require('http').Server(app);
 
-server.listen(process.env.HTTP_LISTEN_PORT || 80);
+server.listen(process.env.HTTP_LISTEN_PORT || 9000);
 app.use(bodyParser.json());
 app.post('/command/:category/:command', function(req, res) {
 	var commandPath = `${req.params.category}.${req.params.command}`;
