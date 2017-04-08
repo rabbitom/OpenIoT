@@ -195,7 +195,7 @@ public class MainActivity extends BaseActivity
     public void onTabSwitched(TabItem tab, boolean highlighted) {
         int index = tabs.indexOf(tab);
         String lightId = Light.getLights().get(index);
-        Light.idLight(lightId, apiHandler);
+        //Light.idLight(lightId, apiHandler);
         if(highlighted)
             Light.addToGroup(lightId, 1, apiHandler);
         else
