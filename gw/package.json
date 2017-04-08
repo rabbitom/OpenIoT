@@ -1,6 +1,6 @@
 {
   "name": "lighting-gw",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "description": "This is a smart lighting gateway, which communicates with Zigbee Home Automation network and connect it to cloud.",
   "bin": {
     "lighting-gw": "src/main.js"
