@@ -113,7 +113,8 @@ function initHost() {
 			"id": light.id,
 			"power": light.power
 		}));
-		reportState();
+		curState.Group1.power = light.power;
+		//reportState();
 	});
 	host.on("foundNewLight", function(light) {
 		console.log("found new light: " + JSON.stringify({
@@ -251,15 +252,49 @@ app.get('/', function (req, res) {
 
 app.use(express.static(__dirname + '/static'));
 
-app.post('/lights/:lightId/status', function(req, res) {
-	var lightId = req.params.lightId;
+// app.post('/lights/:lightId/status', function(req, res) {
+// 	var lightId = req.params.lightId;
+// 	if(host) {
+// 		var light = host.getLight('id', lightId);
+// 		if(light) {
+// 			//update thing shadow
+// 			if((thingShadows !== undefined) && thingShadowsConnected) {
+// 				var newState = new Object();
+// 				newState[lightId] = req.body;
+// 				var state = {
+// 					"state": {
+// 						"desired": newState
+// 					}
+// 				};
+// 				var clientUpdateToken = thingShadows.update(gatewayId, state);
+// 				if(clientUpdateToken)
+// 					console.log("updated desired thing shadow:", newState);
+// 				else
+// 					console.log("update desired thing shadow failed");
+// 			}
+// 			//set state
+// 			host.setLightState(light, req.body);	
+// 			res.status(200).json({message:"OK"});
+// 		}
+// 		else
+// 			res.status(500).json({message:`${lightId} does not exist`});
+// 	}
+// 	else
+// 		res.status(500).json({message:'host not initialized'});
+// });
+
+app.post('/groups/:groupNum/status', function(req, res) {
+	var groupNum = req.params.groupNum;
+	var groupId = "Group" + groupNum;
 	if(host) {
-		var light = host.getLight('id', lightId);
-		if(light) {
+		var powerState = req.body.power;
+		if(powerState) {
 			//update thing shadow
 			if((thingShadows !== undefined) && thingShadowsConnected) {
 				var newState = new Object();
-				newState[lightId] = req.body;
+				newState[groupId] = {
+					"power": powerState
+				};
 				var state = {
 					"state": {
 						"desired": newState
@@ -272,11 +307,11 @@ app.post('/lights/:lightId/status', function(req, res) {
 					console.log("update desired thing shadow failed");
 			}
 			//set state
-			host.setLightState(light, req.body);	
+			host.onUserCommand("light.power", {"group":groupNum, "operation":powerState});	
 			res.status(200).json({message:"OK"});
 		}
 		else
-			res.status(500).json({message:`${lightId} does not exist`});
+			res.status(500).json({message:'set power state'});
 	}
 	else
 		res.status(500).json({message:'host not initialized'});
@@ -386,15 +421,15 @@ function initThingShadows() {
 
 var latestStateReportFailed = false;
 
+var curState = {
+	"Group1": {
+		"power": "on"
+	}
+};
+
 function reportState() {
 	if((thingShadows == null) || (!thingShadowsConnected) || (host == null))
 		return;
-    var curState = new Object();
-    for(var light of host.lights) {
-        curState[light.id] = {
-            power: light.power
-        };
-    }
     var state = {
         "state": {
             "reported": curState

@@ -55,8 +55,13 @@ function ZHAHost(port) {
         }
     })
     this.on("powerAck", function(message) {
-        var nwkAddr = message.nwkAddr;
-        this.onCommand(commands.light.getPower, {'nwkAddr': nwkAddr});
+        var params;
+        if(message.addrType == constants.addrTypes.nwkUnicast)
+            params = {'nwkAddr': message.nwkAddr};
+        else if(message.addrType == constants.addrTypes.multicast)
+            params = {'group': message.nwkAddr};
+        if(params)
+            this.onCommand(commands.light.getPower, params);
     });
     this.on("getPowerResponse", function(message) {
         var light = this.getLight('nwkAddr', message.nwkAddr);

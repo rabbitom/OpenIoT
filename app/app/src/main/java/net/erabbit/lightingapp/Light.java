@@ -73,11 +73,19 @@ public class Light {
     }
 
     public static void setLightPower(String lightId, int power, Handler handler) {
-        String url = getUrl("/command/light/power");
-        HttpThread thread = new HttpThread(url, handler, MSG_LIGHT_POWER);
-        setLightIdParam(thread, lightId);
-        thread.addParam("operation", (power == LIGHT_POWER_ON) ? "on" : "off");
-        thread.start();
+        if(lightId.startsWith("Group")) {
+            String url = getUrl("/groups/" + lightId.substring(5) + "/status");
+            HttpThread thread = new HttpThread(url, handler, MSG_LIGHT_POWER);
+            thread.addParam("power", (power == LIGHT_POWER_ON) ? "on" : "off");
+            thread.start();
+        }
+        else {
+            String url = getUrl("/command/light/power");
+            HttpThread thread = new HttpThread(url, handler, MSG_LIGHT_POWER);
+            setLightIdParam(thread, lightId);
+            thread.addParam("operation", (power == LIGHT_POWER_ON) ? "on" : "off");
+            thread.start();
+        }
     }
 
     public static void setLightColor(String lightId, int color, Handler handler) {
