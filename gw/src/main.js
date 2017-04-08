@@ -113,8 +113,10 @@ function initHost() {
 			"id": light.id,
 			"power": light.power
 		}));
-		curState.Group1.power = light.power;
-		//reportState();
+		if(light.power != curState.Group1.power) {
+			curState.Group1.power = light.power;
+			reportState();
+		}
 	});
 	host.on("foundNewLight", function(light) {
 		console.log("found new light: " + JSON.stringify({
@@ -405,10 +407,18 @@ function initThingShadows() {
 		var deltaState = stateObject.state;
 		if(host) {
 			for(var lightId in deltaState) {
-				var light = host.getLight(lightId);
-				if(light) {
-					var newState = deltaState[lightId];
-					host.setLightState(light, newState);
+				if(lightId.startsWith("Light")) {
+					var light = host.getLight("id", lightId);
+					if(light) {
+						var newState = deltaState[lightId];
+						host.setLightState(light, newState);
+					}
+				}
+				else if(lightId.startsWith("Group")) {
+					var groupNum = lightId.substring(5);
+					var powerState = deltaState[lightId].power;
+					if(powerState)
+						host.onUserCommand("light.power", {"group":groupNum, "operation":powerState});
 				}
 			}
 		}
