@@ -3,6 +3,7 @@ package net.erabbit.lightingapp;
 import android.app.AlertDialog;
 import android.app.FragmentManager;
 import android.app.FragmentTransaction;
+import android.app.ProgressDialog;
 import android.content.DialogInterface;
 import android.graphics.Color;
 import android.graphics.drawable.Drawable;
@@ -15,12 +16,56 @@ import android.view.ViewGroup;
 import android.widget.EditText;
 import android.widget.LinearLayout;
 import android.widget.TextView;
+import android.widget.Toast;
 import android.widget.ViewFlipper;
+
+import net.erabbit.common_lib.LanSearchThread;
 
 import java.util.ArrayList;
 
 public class MainActivity extends BaseActivity
-        implements LightFragment.OnLightFragmentInteracionListener, View.OnClickListener {
+        implements LightFragment.OnLightFragmentInteracionListener, View.OnClickListener, LanSearchThread.LanSearchListener, DialogInterface.OnCancelListener {
+
+    @Override
+    public void onLanSearchStarted() {
+        busyDialog = ProgressDialog.show(this, "Searching Gateway", "Searching lighting gateway on local network", true, true, this);
+    }
+
+    @Override
+    public void onLanDeviceFound(LanSearchThread.DeviceInfo deviceInfo) {
+        if((busyDialog != null) && busyDialog.isShowing())
+            busyDialog.dismiss();
+        Toast.makeText(this, "Gateway found: " + Light.serverIp, Toast.LENGTH_SHORT).show();
+        setLightServerIp(deviceInfo.getAddress());
+    }
+
+    @Override
+    public void onLanDeviceNotFound() {
+        if((busyDialog != null) && busyDialog.isShowing())
+            busyDialog.dismiss();
+        Toast.makeText(this, "Gateway not found!", Toast.LENGTH_SHORT).show();
+    }
+
+    LanSearchThread.LanSearchHandler lanSearchHandler = new LanSearchThread.LanSearchHandler(this);
+
+    ProgressDialog busyDialog;
+
+    @Override
+    public void onCancel(DialogInterface dialogInterface) {
+        final EditText editText = new EditText(this);
+        editText.setText(Light.getServerIp());
+        new AlertDialog.Builder(this)
+                .setTitle(R.string.set_ip)
+                .setView(editText)
+                .setPositiveButton(R.string.ok, new DialogInterface.OnClickListener() {
+                    @Override
+                    public void onClick(DialogInterface dialogInterface, int i) {
+                        setLightServerIp(editText.getText().toString());
+                    }
+                })
+                .setNegativeButton(R.string.cancel, null)
+                .show();
+    }
 
     protected class TabItem implements View.OnClickListener {
         public final String name;
@@ -108,6 +153,26 @@ public class MainActivity extends BaseActivity
         deviceControlView = findViewById(R.id.activity_main);
         views = (ViewFlipper)findViewById(R.id.views);
 
+        setBgColor(R.color.bg_light);
+
+        lightFragment = LightFragment.newInstance(Light.getLightColors());
+        FragmentManager fragmentManager = getFragmentManager();
+        FragmentTransaction fragmentTransaction = fragmentManager.beginTransaction();
+        fragmentTransaction.add(R.id.views, lightFragment);
+        fragmentTransaction.commit();
+
+        views.setDisplayedChild(0);
+
+        LanSearchThread.SearchDevice(lanSearchHandler);
+    }
+
+    void setLightServerIp(String newIp) {
+        Light.serverIp = newIp;
+        actionBarRightIcon.setVisibility(View.INVISIBLE);
+        createLightItems();
+    }
+
+    private void createLightItems() {
         for(String light : Light.getLights()) {
             TabItem lightTab = new TabItem(light, R.drawable.light_normal, R.drawable.light_pressed);
             tabs.add(lightTab);
@@ -118,16 +183,6 @@ public class MainActivity extends BaseActivity
             tab.createView(tabsHolder);
             tab.setTextColor(getResources().getColor(R.color.tab_text_normal), getResources().getColor(R.color.tab_text_hilight));
         }
-
-        setBgColor(R.color.bg_light);
-
-        lightFragment = LightFragment.newInstance(Light.getLightColors());
-        FragmentManager fragmentManager = getFragmentManager();
-        FragmentTransaction fragmentTransaction = fragmentManager.beginTransaction();
-        fragmentTransaction.add(R.id.views, lightFragment);
-        fragmentTransaction.commit();
-
-        views.setDisplayedChild(0);
     }
 
     int curLightsMask = 0;
@@ -214,19 +269,7 @@ public class MainActivity extends BaseActivity
     @Override
     public void onClick(View view) {
         if(view == actionBarRightIcon) {
-            final EditText editText = new EditText(this);
-            editText.setText(Light.getServerIp());
-            new AlertDialog.Builder(this)
-                    .setTitle(R.string.set_ip)
-                    .setView(editText)
-                    .setPositiveButton(R.string.ok, new DialogInterface.OnClickListener() {
-                        @Override
-                        public void onClick(DialogInterface dialogInterface, int i) {
-                            Light.setServerIp(editText.getText().toString());
-                        }
-                    })
-                    .setNegativeButton(R.string.cancel, null)
-                    .show();
+            LanSearchThread.SearchDevice(lanSearchHandler);
         }
     }
 }
