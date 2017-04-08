@@ -38,7 +38,7 @@ public class Light {
         return lights;
     }
 
-    static String serverIp = "192.168.0.100";
+    static String serverIp = "192.168.1.108";
 
     static String getUrl(String suffix) {
         return "http://" + serverIp + ":9000" + suffix;
@@ -65,10 +65,17 @@ public class Light {
     public static final int LIGHT_COLOR_TEMPERATURE_COLD = 1;
     public static final int LIGHT_COLOR_TEMPERATURE_WARM = 65279;
 
+    static void setLightIdParam(HttpThread thread, String lightId) {
+        if(lightId.startsWith("Group"))
+            thread.addParam("group", lightId.substring(5));
+        else
+            thread.addParam("id", lightId);
+    }
+
     public static void setLightPower(String lightId, int power, Handler handler) {
         String url = getUrl("/command/light/power");
         HttpThread thread = new HttpThread(url, handler, MSG_LIGHT_POWER);
-        thread.addParam("id", lightId);
+        setLightIdParam(thread, lightId);
         thread.addParam("operation", (power == LIGHT_POWER_ON) ? "on" : "off");
         thread.start();
     }
@@ -78,7 +85,7 @@ public class Light {
         HttpThread thread = new HttpThread(url, handler, MSG_LIGHT_COLOR);
         float hsv[] = new float[3];
         Color.colorToHSV(color, hsv);
-        thread.addParam("id", lightId);
+        setLightIdParam(thread, lightId);
         thread.addParam("hue", (int)(hsv[0] / 360 * 254));
         thread.addParam("saturation", (int)(hsv[1] * 254));
         thread.addParam("duration", 2);
@@ -88,7 +95,7 @@ public class Light {
     public static void setLightColorTemperature(String lightId, int colorTemperature, Handler handler) {
         String url = getUrl("/command/light/colorTemperature");
         HttpThread thread = new HttpThread(url, handler, MSG_LIGHT_COLOR_TEMPERATURE);
-        thread.addParam("id", lightId);
+        setLightIdParam(thread, lightId);
         thread.addParam("colorTemperature", colorTemperature);
         thread.addParam("duration", 2);
         thread.start();
@@ -97,7 +104,7 @@ public class Light {
     public static void setLightLuminance(String lightId, int lum, Handler handler) {
         String url = getUrl("/command/light/lum");
         HttpThread thread = new HttpThread(url, handler, MSG_LIGHT);
-        thread.addParam("id", lightId);
+        setLightIdParam(thread, lightId);
         thread.addParam("lum", lum);
         thread.addParam("duration", 2);
         thread.start();
@@ -108,6 +115,22 @@ public class Light {
         HttpThread thread = new HttpThread(url, handler, MSG_LIGHT);
         thread.addParam("id", lightId);
         thread.addParam("time", 2);
+        thread.start();
+    }
+
+    public static void addToGroup(String lightId, int groupNum, Handler handler) {
+        String url = getUrl("/command/ha/addGroup");
+        HttpThread thread = new HttpThread(url, handler, MSG_LIGHT);
+        thread.addParam("id", lightId);
+        thread.addParam("group", groupNum);
+        thread.start();
+    }
+
+    public static void removeFromGroup(String lightId, int groupNum, Handler handler) {
+        String url = getUrl("/command/ha/removeGroup");
+        HttpThread thread = new HttpThread(url, handler, MSG_LIGHT);
+        thread.addParam("id", lightId);
+        thread.addParam("group", groupNum);
         thread.start();
     }
 }

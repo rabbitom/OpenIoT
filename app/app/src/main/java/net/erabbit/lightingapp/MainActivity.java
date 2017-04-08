@@ -135,7 +135,12 @@ public class MainActivity extends BaseActivity
 
     public void onTabSwitched(TabItem tab, boolean highlighted) {
         int index = tabs.indexOf(tab);
-        Light.idLight(Light.getLights().get(index), apiHandler);
+        String lightId = Light.getLights().get(index);
+        Light.idLight(lightId, apiHandler);
+        if(highlighted)
+            Light.addToGroup(lightId, 1, apiHandler);
+        else
+            Light.removeFromGroup(lightId, 1, apiHandler);
         //Log.d("ui", String.format("Light%d %s", index+1, highlighted ? "selected" : "deselected"));
         int lightMask = (int)Math.pow(2,index);
         if(highlighted)
@@ -176,17 +181,18 @@ public class MainActivity extends BaseActivity
     }
 
     String curLights() {
-        if(curLightsMask == 0)
-            return null;
-        else if(curLightsMask == allLightsMask)
-            return "all";
-        else {
-            int lightIndex = (int) (Math.log(curLightsMask) / Math.log(2));
-            if(lightIndex < Light.getLights().size())
-                return Light.getLights().get(lightIndex);
-            else
-                return null;
-        }
+        return "Group1";
+//        if(curLightsMask == 0)
+//            return null;
+//        else if(curLightsMask == allLightsMask)
+//            return "all";
+//        else {
+//            int lightIndex = (int) (Math.log(curLightsMask) / Math.log(2));
+//            if(lightIndex < Light.getLights().size())
+//                return Light.getLights().get(lightIndex);
+//            else
+//                return null;
+//        }
     }
 
     protected void setBgColor(int colorId) {
