@@ -5,6 +5,8 @@ import android.app.FragmentManager;
 import android.app.FragmentTransaction;
 import android.app.ProgressDialog;
 import android.content.DialogInterface;
+import android.content.pm.PackageInfo;
+import android.content.pm.PackageManager;
 import android.graphics.Color;
 import android.graphics.drawable.Drawable;
 import android.os.Bundle;
@@ -148,6 +150,7 @@ public class MainActivity extends BaseActivity
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
+        actionBarLeftIcon.setOnClickListener(this);
         actionBarRightIcon.setOnClickListener(this);
 
         deviceControlView = findViewById(R.id.activity_main);
@@ -268,7 +271,27 @@ public class MainActivity extends BaseActivity
 
     @Override
     public void onClick(View view) {
-        if(view == actionBarRightIcon) {
+        if(view == actionBarLeftIcon) {
+            PackageManager pm = getPackageManager();
+            try {
+                PackageInfo pi = pm.getPackageInfo(getPackageName(), 0);
+                String info = String.format("%s\n%s\n%s\n%s:%s",
+                        getString(R.string.copyright),
+                        getString(R.string.vendor_name),
+                        getString(R.string.vendor_email),
+                        getString(R.string.version),
+                        pi.versionName);
+                new AlertDialog.Builder(MainActivity.this)
+                        .setTitle(getResources().getString(R.string.app_name))
+                        .setMessage(info)
+                        .setPositiveButton(R.string.ok_btn, null)
+                        .show();
+            }
+            catch (PackageManager.NameNotFoundException e) {
+                Log.i("OptionsItem", e.toString());
+            }
+        }
+        else if(view == actionBarRightIcon) {
             LanSearchThread.SearchDevice(lanSearchHandler);
         }
     }

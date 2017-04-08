@@ -1,5 +1,10 @@
 <resources>
-    <string name="app_name">LightingApp</string>
+    <string name="app_name">智能照明</string>
+    <string name="copyright">版权所有&#169;2015~2017</string>
+    <string name="vendor_name">深圳市酷图软件开发有限公司</string>
+    <string name="vendor_email">cooltools@qq.com</string>
+    <string name="version">版本</string>
+    <string name="ok_btn">确定</string>
     <string name="light_normal">Cold</string>
     <string name="light_alternate">Warm</string>
     <string name="light_check">Bright</string>
