@@ -156,6 +156,31 @@ function saveDevices() {
 	})
 }
 
+// local udp server
+var dgram = require('dgram');
+var udp = dgram.createSocket('udp4');
+
+udp.on('error', (err)=>{
+	console.log('udp server error:', err);
+});
+
+udp.on('listening', ()=>{
+	var local = udp.address;
+	console.log(`udp server start listening at ${local.address}:${local.port}`);
+});
+
+udp.on('message', (msg, remote)=>{
+	console.log(`udp got message ${msg} from ${remote.address}:${remote.port}`);
+	udp.send('{"message":"OK"}', remote.port, remote.address, (err, bytes) => {
+		if(err)
+			console.log('udp send message failed due to error:', err);
+		else
+			console.log(`udp send back ${bytes} bytes to remote`);
+	});
+});
+
+udp.bind(process.env.UDP_LISTEN_PORT || 80);
+
 // local http server
 var express = require('express');
 var bodyParser = require('body-parser');
